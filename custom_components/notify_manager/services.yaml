@@ -4,6 +4,69 @@
 # =============================================================================
 
 # =============================================================================
+# VORLAGEN-BASIERTE BENACHRICHTIGUNGEN
+# =============================================================================
+
+send_from_template:
+  name: 📋 Aus Vorlage senden
+  description: Sendet eine Benachrichtigung basierend auf einer im Frontend erstellten Vorlage.
+  fields:
+    template_name:
+      name: Vorlagen-Name
+      description: "Name oder ID der Vorlage (aus dem Notify Manager Panel)"
+      required: true
+      selector:
+        text:
+    title:
+      name: Titel (überschreibt Vorlage)
+      required: false
+      selector:
+        text:
+    message:
+      name: Nachricht (überschreibt Vorlage)
+      required: false
+      selector:
+        text:
+          multiline: true
+    target:
+      name: Empfänger
+      required: false
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - integration: mobile_app
+    priority:
+      name: Priorität (überschreibt Vorlage)
+      required: false
+      selector:
+        select:
+          options:
+            - label: "🔇 Leise"
+              value: "low"
+            - label: "📱 Normal"
+              value: "normal"
+            - label: "🔔 Wichtig"
+              value: "high"
+            - label: "🚨 Kritisch"
+              value: "critical"
+    tag:
+      name: Tag
+      required: false
+      selector:
+        text:
+
+save_templates:
+  name: 💾 Vorlagen speichern (intern)
+  description: Speichert Vorlagen vom Frontend (wird automatisch aufgerufen).
+  fields:
+    templates:
+      name: Vorlagen
+      required: true
+      selector:
+        object:
+
+# =============================================================================
 # GRUNDLEGENDE BENACHRICHTIGUNGEN
 # =============================================================================
 
@@ -74,17 +137,57 @@ send_actionable:
       selector:
         text:
           multiline: true
-    actions:
-      name: Buttons
-      description: "Liste mit action und title"
-      required: true
+    button_template:
+      name: Button-Vorlage
+      description: "Vordefinierte Button-Sets (oder wähle 'Eigene' für individuelle Buttons)"
+      required: false
       selector:
-        object:
-      example: |
-        - action: "CONFIRM"
-          title: "✓ Bestätigen"
-        - action: "DISMISS"
-          title: "✗ Abbrechen"
+        select:
+          options:
+            - label: "📝 Eigene Buttons definieren"
+              value: "custom"
+            - label: "✅ Bestätigen / ❌ Ablehnen"
+              value: "confirm_dismiss"
+            - label: "👍 Ja / 👎 Nein"
+              value: "yes_no"
+            - label: "🚨 Alarm OK / ⏰ Später / 🆘 Notfall"
+              value: "alarm_response"
+            - label: "🔓 Öffnen / 🚪 Ignorieren / 🔊 Sprechen"
+              value: "door_response"
+            - label: "💬 Antworten (mit Texteingabe)"
+              value: "reply"
+    button1_action:
+      name: "Button 1: Action-ID"
+      description: "z.B. CONFIRM, YES, DOOR_OPEN (wird bei Events zurückgegeben)"
+      required: false
+      selector:
+        text:
+    button1_title:
+      name: "Button 1: Text"
+      description: "z.B. ✅ Bestätigen"
+      required: false
+      selector:
+        text:
+    button2_action:
+      name: "Button 2: Action-ID"
+      required: false
+      selector:
+        text:
+    button2_title:
+      name: "Button 2: Text"
+      required: false
+      selector:
+        text:
+    button3_action:
+      name: "Button 3: Action-ID"
+      required: false
+      selector:
+        text:
+    button3_title:
+      name: "Button 3: Text"
+      required: false
+      selector:
+        text:
     target:
       name: Empfänger
       required: false
@@ -194,7 +297,7 @@ send_with_image:
 
 send_alarm_confirmation:
   name: 🚨 Alarm-Bestätigung
-  description: Alarm-Benachrichtigung mit vorkonfigurierten Buttons.
+  description: Alarm-Benachrichtigung mit Buttons. Wähle eine Vorlage oder definiere eigene Buttons.
   fields:
     title:
       name: Titel
@@ -208,20 +311,52 @@ send_alarm_confirmation:
         text:
           multiline: true
     template:
-      name: Vorlage
+      name: Vorlage (oder "custom" für eigene)
       required: false
       default: "alarm_response"
       selector:
         select:
           options:
-            - label: "🚨 Alarm / ⏰ Später / ✓ OK"
+            - label: "📝 Eigene Buttons"
+              value: "custom"
+            - label: "✅ Alles OK / 🆘 Notfall"
+              value: "alarm_simple"
+            - label: "✅ OK / ⏰ Später / 🆘 Notfall"
               value: "alarm_response"
-            - label: "✓ Bestätigen / ✗ Abbrechen"
+            - label: "✅ Bestätigen / ❌ Abbrechen"
               value: "confirm_dismiss"
-            - label: "🔓 Öffnen / 🔒 Sperren"
-              value: "door_response"
-            - label: "👍 Ja / 👎 Nein"
-              value: "yes_no"
+    button1_action:
+      name: "Button 1: Action-ID"
+      description: "z.B. ALARM_CONFIRM"
+      required: false
+      selector:
+        text:
+    button1_title:
+      name: "Button 1: Text"
+      description: "z.B. ✅ Alles OK"
+      required: false
+      selector:
+        text:
+    button2_action:
+      name: "Button 2: Action-ID"
+      required: false
+      selector:
+        text:
+    button2_title:
+      name: "Button 2: Text"
+      required: false
+      selector:
+        text:
+    button3_action:
+      name: "Button 3: Action-ID"
+      required: false
+      selector:
+        text:
+    button3_title:
+      name: "Button 3: Text"
+      required: false
+      selector:
+        text:
     alarm_entity:
       name: Alarm-Entity
       description: "Optional: Alarm-Entity für Auto-Actions"

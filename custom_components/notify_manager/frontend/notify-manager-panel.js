@@ -1,6 +1,6 @@
 /**
  * Notify Manager Panel - Vollständig mit Kategorien, Sensoren, Vorlagen & Gruppen
- * Version 1.2.2
+ * Version 1.2.3
  */
 
 import {
@@ -57,6 +57,9 @@ class NotifyManagerPanel extends LitElement {
       { id: "reminder", name: "⏰ Erinnerung", title: "Erinnerung", message: "", type: "simple", priority: "normal", buttons: [] },
     ]);
     this._groups = this._loadFromStorage("notify_manager_groups", []);
+    
+    // Sync templates to Home Assistant on load
+    this._syncTemplatesToHA();
   }
 
   _loadFromStorage(key, defaultValue) {
@@ -71,8 +74,26 @@ class NotifyManagerPanel extends LitElement {
   _saveToStorage(key, value) {
     try {
       localStorage.setItem(key, JSON.stringify(value));
+      // Also sync to HA if templates
+      if (key === "notify_manager_templates") {
+        this._syncTemplatesToHA();
+      }
     } catch (e) {
       console.error("Storage error:", e);
+    }
+  }
+
+  async _syncTemplatesToHA() {
+    // Send templates to Home Assistant so services can use them
+    if (this.hass && this._templates) {
+      try {
+        await this.hass.callService("notify_manager", "save_templates", {
+          templates: this._templates
+        });
+      } catch (e) {
+        // Service might not exist yet, that's ok
+        console.debug("Template sync:", e);
+      }
     }
   }
 
@@ -482,7 +503,7 @@ class NotifyManagerPanel extends LitElement {
         <img src="/notify_manager_static/images/logo.png" alt="Logo" class="header-logo">
         <div class="header-info">
           <h1 class="header-title">Notify Manager</h1>
-          <div class="header-version">v1.2.2 • ${this._getDevices().length} Geräte • ${this._getServiceCount()} Services</div>
+          <div class="header-version">v1.2.3 • ${this._getDevices().length} Geräte • ${this._getServiceCount()} Services</div>
         </div>
       </div>
 

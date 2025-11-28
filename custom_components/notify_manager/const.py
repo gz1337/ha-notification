@@ -226,25 +226,29 @@ PRIORITY_LEVELS = {
 # Predefined action templates for common use cases
 ACTION_TEMPLATES = {
     "confirm_dismiss": [
-        {"action": "CONFIRM", "title": "Bestätigen", "icon": "sfsymbols:checkmark.circle"},
-        {"action": "DISMISS", "title": "Ablehnen", "icon": "sfsymbols:xmark.circle"},
+        {"action": "CONFIRM", "title": "✅ Bestätigen", "icon": "sfsymbols:checkmark.circle"},
+        {"action": "DISMISS", "title": "❌ Ablehnen", "icon": "sfsymbols:xmark.circle"},
+    ],
+    "alarm_simple": [
+        {"action": "ALARM_CONFIRM", "title": "✅ Alles OK", "icon": "sfsymbols:checkmark.shield"},
+        {"action": "ALARM_EMERGENCY", "title": "🆘 Notfall!", "icon": "sfsymbols:exclamationmark.triangle", "destructive": True},
     ],
     "alarm_response": [
-        {"action": "ALARM_CONFIRM", "title": "Alles OK", "icon": "sfsymbols:checkmark.shield"},
-        {"action": "ALARM_SNOOZE", "title": "Später", "icon": "sfsymbols:clock"},
-        {"action": "ALARM_EMERGENCY", "title": "Notfall!", "icon": "sfsymbols:exclamationmark.triangle", "destructive": True},
+        {"action": "ALARM_CONFIRM", "title": "✅ Alles OK", "icon": "sfsymbols:checkmark.shield"},
+        {"action": "ALARM_SNOOZE", "title": "⏰ Später", "icon": "sfsymbols:clock"},
+        {"action": "ALARM_EMERGENCY", "title": "🆘 Notfall!", "icon": "sfsymbols:exclamationmark.triangle", "destructive": True},
     ],
     "door_response": [
-        {"action": "DOOR_UNLOCK", "title": "Öffnen", "icon": "sfsymbols:lock.open"},
-        {"action": "DOOR_IGNORE", "title": "Ignorieren", "icon": "sfsymbols:hand.raised"},
-        {"action": "DOOR_SPEAK", "title": "Sprechen", "icon": "sfsymbols:speaker.wave.2"},
+        {"action": "DOOR_UNLOCK", "title": "🔓 Öffnen", "icon": "sfsymbols:lock.open"},
+        {"action": "DOOR_IGNORE", "title": "🚪 Ignorieren", "icon": "sfsymbols:hand.raised"},
+        {"action": "DOOR_SPEAK", "title": "🔊 Sprechen", "icon": "sfsymbols:speaker.wave.2"},
     ],
     "yes_no": [
-        {"action": "YES", "title": "Ja", "icon": "sfsymbols:hand.thumbsup"},
-        {"action": "NO", "title": "Nein", "icon": "sfsymbols:hand.thumbsdown"},
+        {"action": "YES", "title": "👍 Ja", "icon": "sfsymbols:hand.thumbsup"},
+        {"action": "NO", "title": "👎 Nein", "icon": "sfsymbols:hand.thumbsdown"},
     ],
     "reply": [
-        {"action": "REPLY", "title": "Antworten", "icon": "sfsymbols:arrowshape.turn.up.left", "behavior": "textInput", "textInputButtonTitle": "Senden", "textInputPlaceholder": "Nachricht eingeben..."},
+        {"action": "REPLY", "title": "💬 Antworten", "icon": "sfsymbols:arrowshape.turn.up.left", "behavior": "textInput", "textInputButtonTitle": "Senden", "textInputPlaceholder": "Nachricht eingeben..."},
     ],
 }
 

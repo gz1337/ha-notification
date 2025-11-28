@@ -122,7 +122,16 @@ SEND_ACTIONABLE_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_TITLE): cv.string,
         vol.Required(ATTR_MESSAGE): cv.string,
-        vol.Required(ATTR_ACTIONS): vol.All(cv.ensure_list, [ACTION_SCHEMA]),
+        # Button template or custom actions
+        vol.Optional("button_template"): cv.string,
+        vol.Optional(ATTR_ACTIONS): vol.All(cv.ensure_list, [ACTION_SCHEMA]),
+        # Individual button fields (alternative to actions list)
+        vol.Optional("button1_action"): cv.string,
+        vol.Optional("button1_title"): cv.string,
+        vol.Optional("button2_action"): cv.string,
+        vol.Optional("button2_title"): cv.string,
+        vol.Optional("button3_action"): cv.string,
+        vol.Optional("button3_title"): cv.string,
         vol.Optional(ATTR_TARGET): vol.All(cv.ensure_list, [cv.string]),
         vol.Optional(ATTR_CATEGORY): cv.string,
         vol.Optional(ATTR_PRIORITY, default="high"): vol.In(["low", "normal", "high", "critical"]),
@@ -241,7 +250,7 @@ async def _async_register_panel(hass: HomeAssistant, show_sidebar: bool = True) 
     )
     
     # Version for cache busting
-    VERSION = "1.2.2"
+    VERSION = "1.2.3"
     
     frontend.async_register_built_in_panel(
         hass,
@@ -670,7 +679,38 @@ async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> N
     # ========== SERVICE: send_actionable ==========
     async def handle_send_actionable(call: ServiceCall) -> None:
         """Handle send_actionable service call - notification with buttons."""
-        actions = call.data[ATTR_ACTIONS]
+        # Build actions from various sources
+        actions = []
+        
+        # 1. Check for button_template
+        button_template = call.data.get("button_template")
+        if button_template and button_template != "custom":
+            actions = ACTION_TEMPLATES.get(button_template, [])
+        
+        # 2. Check for individual button fields (override template)
+        button1_action = call.data.get("button1_action")
+        button1_title = call.data.get("button1_title")
+        if button1_action and button1_title:
+            actions = []  # Clear template if custom buttons provided
+            actions.append({"action": button1_action, "title": button1_title})
+            
+            button2_action = call.data.get("button2_action")
+            button2_title = call.data.get("button2_title")
+            if button2_action and button2_title:
+                actions.append({"action": button2_action, "title": button2_title})
+                
+                button3_action = call.data.get("button3_action")
+                button3_title = call.data.get("button3_title")
+                if button3_action and button3_title:
+                    actions.append({"action": button3_action, "title": button3_title})
+        
+        # 3. Check for actions list (highest priority - direct override)
+        if ATTR_ACTIONS in call.data:
+            actions = call.data[ATTR_ACTIONS]
+        
+        # Fallback to confirm_dismiss if no buttons defined
+        if not actions:
+            actions = ACTION_TEMPLATES.get("confirm_dismiss", [])
         
         data = _build_notification_data(
             priority=call.data.get(ATTR_PRIORITY, "high"),
@@ -717,8 +757,33 @@ async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> N
     # ========== SERVICE: send_alarm_confirmation ==========
     async def handle_send_alarm_confirmation(call: ServiceCall) -> None:
         """Handle send_alarm_confirmation - preconfigured alarm notification with buttons."""
+        # Build actions from template or custom buttons
+        actions = []
         template = call.data.get("template", "alarm_response")
-        actions = ACTION_TEMPLATES.get(template, ACTION_TEMPLATES["alarm_response"])
+        
+        # Check for custom buttons first
+        button1_action = call.data.get("button1_action")
+        button1_title = call.data.get("button1_title")
+        if button1_action and button1_title:
+            actions.append({"action": button1_action, "title": button1_title})
+            
+            button2_action = call.data.get("button2_action")
+            button2_title = call.data.get("button2_title")
+            if button2_action and button2_title:
+                actions.append({"action": button2_action, "title": button2_title})
+                
+                button3_action = call.data.get("button3_action")
+                button3_title = call.data.get("button3_title")
+                if button3_action and button3_title:
+                    actions.append({"action": button3_action, "title": button3_title})
+        
+        # Use template if no custom buttons or template not "custom"
+        if not actions and template != "custom":
+            actions = ACTION_TEMPLATES.get(template, ACTION_TEMPLATES["alarm_response"])
+        
+        # Fallback
+        if not actions:
+            actions = ACTION_TEMPLATES["alarm_simple"]
         
         data = _build_notification_data(
             priority="critical",
@@ -803,6 +868,68 @@ async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> N
             except Exception as err:
                 _LOGGER.error("Failed to clear notifications for %s: %s", device, err)
     
+    # ========== SERVICE: save_templates ==========
+    async def handle_save_templates(call: ServiceCall) -> None:
+        """Save templates from frontend to hass.data."""
+        templates = call.data.get("templates", [])
+        config_data = hass.data[DOMAIN].get(entry.entry_id, {})
+        config_data["user_templates"] = templates
+        _LOGGER.debug("Saved %d user templates", len(templates))
+    
+    # ========== SERVICE: send_from_template ==========
+    async def handle_send_from_template(call: ServiceCall) -> None:
+        """Send notification using a saved template."""
+        template_name = call.data.get("template_name", "")
+        config_data = hass.data[DOMAIN].get(entry.entry_id, {})
+        user_templates = config_data.get("user_templates", [])
+        
+        # Find template by name or id
+        template = None
+        for t in user_templates:
+            if t.get("name") == template_name or t.get("id") == template_name:
+                template = t
+                break
+        
+        if not template:
+            _LOGGER.error("Template not found: %s", template_name)
+            return
+        
+        # Override with call data if provided
+        title = call.data.get("title") or template.get("title", "")
+        message = call.data.get("message") or template.get("message", "")
+        priority = call.data.get("priority") or template.get("priority", "normal")
+        buttons = template.get("buttons", [])
+        
+        # Convert buttons to actions format
+        actions = []
+        for btn in buttons:
+            action = {"action": btn.get("action", ""), "title": btn.get("title", "")}
+            if btn.get("behavior"):
+                action["behavior"] = btn["behavior"]
+            if btn.get("textInputButtonTitle"):
+                action["textInputButtonTitle"] = btn["textInputButtonTitle"]
+            if btn.get("textInputPlaceholder"):
+                action["textInputPlaceholder"] = btn["textInputPlaceholder"]
+            actions.append(action)
+        
+        notification_type = template.get("type", "simple")
+        
+        data = _build_notification_data(
+            priority=priority,
+            category=call.data.get(ATTR_CATEGORY),
+            tag=call.data.get(ATTR_TAG),
+            actions=actions if notification_type == "buttons" else None,
+            camera_entity=template.get("camera") if notification_type == "image" else None,
+        )
+        
+        await _send_to_devices(
+            title=title,
+            message=message,
+            targets=call.data.get(ATTR_TARGET, []),
+            data=data,
+            category=call.data.get(ATTR_CATEGORY),
+        )
+    
     # Register all services
     hass.services.async_register(
         DOMAIN, SERVICE_SEND_NOTIFICATION, handle_send_notification, schema=SEND_NOTIFICATION_SCHEMA
@@ -821,6 +948,12 @@ async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> N
     )
     hass.services.async_register(
         DOMAIN, SERVICE_CLEAR_NOTIFICATIONS, handle_clear_notifications, schema=CLEAR_NOTIFICATIONS_SCHEMA
+    )
+    hass.services.async_register(
+        DOMAIN, "save_templates", handle_save_templates
+    )
+    hass.services.async_register(
+        DOMAIN, "send_from_template", handle_send_from_template
     )
 
 
@@ -842,6 +975,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             hass.services.async_remove(DOMAIN, SERVICE_SEND_ALARM_CONFIRMATION)
             hass.services.async_remove(DOMAIN, SERVICE_SEND_TEXT_INPUT)
             hass.services.async_remove(DOMAIN, SERVICE_CLEAR_NOTIFICATIONS)
+            hass.services.async_remove(DOMAIN, "save_templates")
+            hass.services.async_remove(DOMAIN, "send_from_template")
             await async_unregister_additional_services(hass)
     
     return unload_ok
