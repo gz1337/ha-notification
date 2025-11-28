@@ -582,8 +582,31 @@ async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> N
     ) -> None:
         """Send notification to specified devices."""
         config_data = hass.data[DOMAIN].get(entry.entry_id, {})
-        devices = targets if targets else config_data.get("devices", [])
         categories = config_data.get("categories", DEFAULT_CATEGORIES)
+        
+        # Process targets - can be entity IDs or device names
+        processed_targets = []
+        if targets:
+            for target in targets:
+                if isinstance(target, str):
+                    # Remove domain prefix if present (e.g., device_tracker.iphone -> iphone)
+                    if "." in target:
+                        # Entity ID format: domain.name
+                        entity_id = target
+                        # Try to find the corresponding mobile_app service
+                        # Get the device name from the entity
+                        device_name = target.split(".")[-1]
+                        # Check if mobile_app service exists for this device
+                        if f"mobile_app_{device_name}" in (hass.services.async_services().get("notify", {}) or {}):
+                            processed_targets.append(device_name)
+                        else:
+                            # Try without mobile_app_ prefix check - maybe it matches
+                            processed_targets.append(device_name)
+                    else:
+                        # Already a device name
+                        processed_targets.append(target)
+        
+        devices = processed_targets if processed_targets else config_data.get("devices", [])
         
         # Check if category is enabled
         if category and category in categories:

@@ -24,13 +24,151 @@ send_notification:
           multiline: true
     target:
       name: Empfänger
-      description: |
-        Geräte-IDs ohne "mobile_app_" Präfix.
-        Beispiel: ["iphone", "pixel_7"]
-        Leer = alle konfigurierten Geräte.
-        Tipp: Geräte-IDs findest du unter Entwicklerwerkzeuge → Dienste → notify.
+      description: "Geräte-Namen (ohne 'mobile_app_'). Findest du unter Entwicklerwerkzeuge → Dienste → notify.mobile_app_XXX"
       required: false
-      example: ["iphone", "pixel_7"]
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - integration: mobile_app
+    priority:
+      name: Priorität
+      required: false
+      default: "normal"
+      selector:
+        select:
+          options:
+            - label: "🔇 Leise"
+              value: "low"
+            - label: "📱 Normal"
+              value: "normal"
+            - label: "🔔 Wichtig"
+              value: "high"
+            - label: "🚨 Kritisch"
+              value: "critical"
+    tag:
+      name: Tag
+      description: "Eindeutige ID zum Ersetzen/Löschen"
+      required: false
+      selector:
+        text:
+    clickAction:
+      name: Bei Klick öffnen
+      description: "URL oder /lovelace/dashboard"
+      required: false
+      selector:
+        text:
+
+send_actionable:
+  name: 🔘 Mit Buttons
+  description: Benachrichtigung mit Aktions-Buttons. Buttons erscheinen auf iOS beim Runterziehen der Benachrichtigung.
+  fields:
+    title:
+      name: Titel
+      required: true
+      selector:
+        text:
+    message:
+      name: Nachricht
+      required: true
+      selector:
+        text:
+          multiline: true
+    actions:
+      name: Buttons
+      description: "Liste mit action und title"
+      required: true
+      selector:
+        object:
+      example: |
+        - action: "CONFIRM"
+          title: "✓ Bestätigen"
+        - action: "DISMISS"
+          title: "✗ Abbrechen"
+    target:
+      name: Empfänger
+      required: false
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - integration: mobile_app
+    priority:
+      name: Priorität
+      required: false
+      default: "normal"
+      selector:
+        select:
+          options:
+            - label: "🔇 Leise"
+              value: "low"
+            - label: "📱 Normal"
+              value: "normal"
+            - label: "🔔 Wichtig"
+              value: "high"
+            - label: "🚨 Kritisch"
+              value: "critical"
+    tag:
+      name: Tag
+      required: false
+      selector:
+        text:
+    persistent:
+      name: Dauerhaft
+      description: "Benachrichtigung bleibt bis manuell geschlossen (Android)"
+      required: false
+      default: false
+      selector:
+        boolean:
+    sticky:
+      name: Sticky
+      description: "Bleibt nach Antippen sichtbar (Android)"
+      required: false
+      default: false
+      selector:
+        boolean:
+
+send_with_image:
+  name: 📷 Mit Bild/Kamera
+  description: Benachrichtigung mit Bild oder Kamera-Snapshot.
+  fields:
+    title:
+      name: Titel
+      required: true
+      selector:
+        text:
+    message:
+      name: Nachricht
+      required: true
+      selector:
+        text:
+          multiline: true
+    camera_entity:
+      name: Kamera
+      description: "Kamera-Entity für Snapshot"
+      required: false
+      selector:
+        entity:
+          filter:
+            - domain: camera
+    image:
+      name: Bild-URL
+      description: "Alternativ: URL zu einem Bild"
+      required: false
+      selector:
+        text:
+    target:
+      name: Empfänger
+      required: false
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - integration: mobile_app
+    actions:
+      name: Buttons
+      description: "Optional: Aktions-Buttons"
+      required: false
       selector:
         object:
     priority:
@@ -53,15 +191,10 @@ send_notification:
       required: false
       selector:
         text:
-    clickAction:
-      name: Bei Klick öffnen
-      required: false
-      selector:
-        text:
 
-send_actionable:
-  name: 🔘 Mit Buttons
-  description: Benachrichtigung mit Aktions-Buttons.
+send_alarm_confirmation:
+  name: 🚨 Alarm-Bestätigung
+  description: Alarm-Benachrichtigung mit vorkonfigurierten Buttons.
   fields:
     title:
       name: Titel
@@ -74,144 +207,41 @@ send_actionable:
       selector:
         text:
           multiline: true
-    actions:
-      name: Buttons
-      description: "Liste: [{action: 'ID', title: 'Text'}]"
-      required: true
-      selector:
-        object:
-    target:
-      name: Empfänger
-      required: false
-      selector:
-        text:
-          multiple: true
-    priority:
-      name: Priorität
-      required: false
-      default: "high"
-      selector:
-        select:
-          options:
-            - label: "📱 Normal"
-              value: "normal"
-            - label: "🔔 Wichtig"
-              value: "high"
-            - label: "🚨 Kritisch"
-              value: "critical"
-    tag:
-      name: Tag
-      required: false
-      selector:
-        text:
-    persistent:
-      name: Persistent
-      required: false
-      selector:
-        boolean:
-
-send_with_image:
-  name: 📷 Mit Bild/Kamera
-  description: Benachrichtigung mit Bild oder Kamera-Snapshot.
-  fields:
-    title:
-      name: Titel
-      required: true
-      selector:
-        text:
-    message:
-      name: Nachricht
-      required: true
-      selector:
-        text:
-    camera_entity:
-      name: Kamera
-      required: false
-      selector:
-        entity:
-          filter:
-            domain: camera
-    image:
-      name: Bild-URL
-      required: false
-      selector:
-        text:
-    target:
-      name: Empfänger
-      required: false
-      selector:
-        text:
-          multiple: true
-    actions:
-      name: Buttons
-      required: false
-      selector:
-        object:
-    priority:
-      name: Priorität
-      required: false
-      default: "high"
-      selector:
-        select:
-          options:
-            - label: "📱 Normal"
-              value: "normal"
-            - label: "🔔 Wichtig"
-              value: "high"
-            - label: "🚨 Kritisch"
-              value: "critical"
-    tag:
-      name: Tag
-      required: false
-      selector:
-        text:
-
-send_alarm_confirmation:
-  name: 🚨 Alarm-Bestätigung
-  description: Schnelle Alarm-Benachrichtigung mit Vorlagen.
-  fields:
-    title:
-      name: Titel
-      required: true
-      default: "🚨 Alarm!"
-      selector:
-        text:
-    message:
-      name: Nachricht
-      required: true
-      selector:
-        text:
     template:
-      name: Button-Vorlage
+      name: Vorlage
       required: false
-      default: "confirm_dismiss"
+      default: "alarm_response"
       selector:
         select:
           options:
-            - label: "✓ Bestätigen / ✗ Abbrechen"
-              value: "confirm_dismiss"
             - label: "🚨 Alarm / ⏰ Später / ✓ OK"
               value: "alarm_response"
+            - label: "✓ Bestätigen / ✗ Abbrechen"
+              value: "confirm_dismiss"
             - label: "🔓 Öffnen / 🔒 Sperren"
               value: "door_response"
             - label: "👍 Ja / 👎 Nein"
               value: "yes_no"
+    alarm_entity:
+      name: Alarm-Entity
+      description: "Optional: Alarm-Entity für Auto-Actions"
+      required: false
+      selector:
+        entity:
+          filter:
+            - domain: alarm_control_panel
     target:
       name: Empfänger
       required: false
       selector:
-        text:
+        entity:
           multiple: true
-    tag:
-      name: Tag
-      required: false
-      default: "alarm"
-      selector:
-        text:
+          filter:
+            - integration: mobile_app
 
 send_text_input:
   name: ✏️ Mit Texteingabe
-  description: Empfänger kann Text antworten.
+  description: Benachrichtigung bei der der Empfänger antworten kann.
   fields:
     title:
       name: Titel
@@ -223,24 +253,43 @@ send_text_input:
       required: true
       selector:
         text:
+          multiline: true
     input_title:
-      name: Button-Text
+      name: Eingabe-Button
+      description: "Text auf dem Antwort-Button"
       required: false
       default: "Antworten"
       selector:
         text:
     placeholder:
       name: Platzhalter
+      description: "Platzhalter-Text im Eingabefeld"
       required: false
-      default: "Nachricht eingeben..."
       selector:
         text:
     target:
       name: Empfänger
       required: false
       selector:
-        text:
+        entity:
           multiple: true
+          filter:
+            - integration: mobile_app
+    priority:
+      name: Priorität
+      required: false
+      default: "normal"
+      selector:
+        select:
+          options:
+            - label: "🔇 Leise"
+              value: "low"
+            - label: "📱 Normal"
+              value: "normal"
+            - label: "🔔 Wichtig"
+              value: "high"
+            - label: "🚨 Kritisch"
+              value: "critical"
     tag:
       name: Tag
       required: false
@@ -248,12 +297,12 @@ send_text_input:
         text:
 
 clear_notifications:
-  name: 🗑️ Löschen
-  description: Benachrichtigungen vom Gerät entfernen.
+  name: 🗑️ Benachrichtigungen löschen
+  description: Löscht Benachrichtigungen auf dem Gerät.
   fields:
     tag:
       name: Tag
-      description: Nur mit diesem Tag (leer = alle)
+      description: "Bestimmte Benachrichtigung löschen (optional)"
       required: false
       selector:
         text:
@@ -261,51 +310,58 @@ clear_notifications:
       name: Empfänger
       required: false
       selector:
-        text:
+        entity:
           multiple: true
+          filter:
+            - integration: mobile_app
 
 # =============================================================================
-# TEXT-TO-SPEECH (Android)
+# ERWEITERTE SERVICES
 # =============================================================================
 
 send_tts:
-  name: 🔊 Text vorlesen
-  description: Spricht Text auf Android-Gerät aus.
+  name: 🔊 Text vorlesen (TTS)
+  description: Text auf Android-Gerät vorlesen lassen.
   fields:
     tts_text:
       name: Text
+      description: "Text der vorgelesen werden soll"
       required: true
       selector:
         text:
           multiline: true
     media_stream:
-      name: Lautstärke
+      name: Audio-Stream
+      description: "Über welchen Stream abspielen"
       required: false
       default: "music_stream"
       selector:
         select:
           options:
-            - label: "🔈 Normal"
+            - label: "🎵 Musik"
               value: "music_stream"
-            - label: "🔔 Alarm"
+            - label: "⏰ Wecker"
               value: "alarm_stream"
-            - label: "📢 Maximum"
+            - label: "🚨 Wecker (Laut)"
               value: "alarm_stream_max"
     target:
       name: Empfänger
       required: false
       selector:
-        text:
+        entity:
           multiple: true
-
-# =============================================================================
-# KARTE MIT PIN (iOS)
-# =============================================================================
+          filter:
+            - integration: mobile_app
 
 send_map:
-  name: 🗺️ Karte senden
-  description: Karte mit Standort-Pin (iOS).
+  name: 🗺️ Karte mit Pin (iOS)
+  description: Zeigt eine Karte mit Standort-Pin in der Benachrichtigung.
   fields:
+    title:
+      name: Titel
+      required: false
+      selector:
+        text:
     message:
       name: Nachricht
       required: true
@@ -321,54 +377,45 @@ send_map:
       required: true
       selector:
         text:
-    title:
-      name: Titel
-      required: false
-      selector:
-        text:
     second_latitude:
-      name: 2. Breitengrad
+      name: Zweiter Breitengrad
+      description: "Optional: Zweiter Pin"
       required: false
       selector:
         text:
     second_longitude:
-      name: 2. Längengrad
+      name: Zweiter Längengrad
       required: false
       selector:
         text:
     shows_line_between_points:
-      name: Linie zeigen
+      name: Linie zwischen Punkten
       required: false
+      default: false
       selector:
         boolean:
     shows_traffic:
-      name: Verkehr zeigen
+      name: Verkehr anzeigen
       required: false
+      default: false
       selector:
         boolean:
     target:
       name: Empfänger
       required: false
       selector:
-        text:
+        entity:
           multiple: true
-    tag:
-      name: Tag
-      required: false
-      selector:
-        text:
-
-# =============================================================================
-# VIDEO/AUDIO ANHÄNGE
-# =============================================================================
+          filter:
+            - integration: mobile_app
 
 send_media:
   name: 🎬 Video/Audio
-  description: Benachrichtigung mit Video oder Audio.
+  description: Benachrichtigung mit Video- oder Audio-Anhang.
   fields:
     title:
       name: Titel
-      required: true
+      required: false
       selector:
         text:
     message:
@@ -378,45 +425,43 @@ send_media:
         text:
     video:
       name: Video-URL
+      description: "/media/local/video.mp4 oder URL"
       required: false
-      example: "/media/local/clip.mp4"
       selector:
         text:
     audio:
       name: Audio-URL
-      required: false
-      example: "/media/local/sound.mp3"
-      selector:
-        text:
-    image:
-      name: Thumbnail
+      description: "/media/local/audio.mp3 oder URL"
       required: false
       selector:
         text:
-    hide_thumbnail:
-      name: Thumbnail verstecken
-      required: false
-      selector:
-        boolean:
     target:
       name: Empfänger
       required: false
       selector:
-        text:
+        entity:
           multiple: true
-    tag:
-      name: Tag
+          filter:
+            - integration: mobile_app
+    priority:
+      name: Priorität
       required: false
+      default: "normal"
       selector:
-        text:
-
-# =============================================================================
-# FORTSCHRITTSBALKEN (Android)
-# =============================================================================
+        select:
+          options:
+            - label: "🔇 Leise"
+              value: "low"
+            - label: "📱 Normal"
+              value: "normal"
+            - label: "🔔 Wichtig"
+              value: "high"
+            - label: "🚨 Kritisch"
+              value: "critical"
 
 send_progress:
-  name: 📊 Fortschrittsbalken
-  description: Benachrichtigung mit Progress Bar (Android).
+  name: 📊 Fortschrittsbalken (Android)
+  description: Zeigt einen Fortschrittsbalken in der Benachrichtigung.
   fields:
     title:
       name: Titel
@@ -430,13 +475,13 @@ send_progress:
         text:
     progress:
       name: Fortschritt
-      description: 0-100, -1 zum Entfernen
+      description: "0-100 oder -1 zum Entfernen"
       required: true
       selector:
         number:
           min: -1
           max: 100
-          mode: slider
+          step: 1
     progress_max:
       name: Maximum
       required: false
@@ -447,13 +492,14 @@ send_progress:
           max: 1000
     progress_indeterminate:
       name: Unbestimmt
-      description: Kontinuierliche Animation
+      description: "Animierter Balken ohne festen Wert"
       required: false
+      default: false
       selector:
         boolean:
     tag:
       name: Tag
-      description: Wichtig für Updates!
+      description: "WICHTIG: Gleicher Tag für Updates!"
       required: true
       selector:
         text:
@@ -461,16 +507,14 @@ send_progress:
       name: Empfänger
       required: false
       selector:
-        text:
+        entity:
           multiple: true
-
-# =============================================================================
-# TIMER/CHRONOMETER (Android)
-# =============================================================================
+          filter:
+            - integration: mobile_app
 
 send_chronometer:
-  name: ⏱️ Timer
-  description: Benachrichtigung mit Countdown (Android).
+  name: ⏱️ Timer/Countdown (Android)
+  description: Zeigt einen laufenden Timer in der Benachrichtigung.
   fields:
     title:
       name: Titel
@@ -484,46 +528,43 @@ send_chronometer:
         text:
     when:
       name: Sekunden
-      description: Countdown-Zeit
+      description: "Countdown in Sekunden"
       required: true
       selector:
         number:
           min: 1
           max: 86400
-          unit_of_measurement: "s"
     when_relative:
-      name: Relativ
+      name: Relativ zu jetzt
       required: false
       default: true
       selector:
         boolean:
     timeout:
       name: Auto-Dismiss
+      description: "Nach X Sekunden automatisch schließen"
       required: false
       selector:
         number:
           min: 1
           max: 86400
-          unit_of_measurement: "s"
     tag:
       name: Tag
-      required: true
+      required: false
       selector:
         text:
     target:
       name: Empfänger
       required: false
       selector:
-        text:
+        entity:
           multiple: true
-
-# =============================================================================
-# GERÄTE-BEFEHLE (Android)
-# =============================================================================
+          filter:
+            - integration: mobile_app
 
 device_command:
-  name: 📲 Geräte-Befehl
-  description: Steuert Android-Gerätefunktionen.
+  name: 📲 Geräte-Befehl (Android)
+  description: Sendet einen Befehl an ein Android-Gerät.
   fields:
     command:
       name: Befehl
@@ -531,7 +572,7 @@ device_command:
       selector:
         select:
           options:
-            - label: "🔇 Nicht stören (DND)"
+            - label: "🔕 Nicht stören"
               value: "command_dnd"
             - label: "🔔 Klingelton"
               value: "command_ringer_mode"
@@ -539,7 +580,7 @@ device_command:
               value: "command_volume_level"
             - label: "📱 Bildschirm an"
               value: "command_screen_on"
-            - label: "💡 Helligkeit"
+            - label: "🔆 Helligkeit"
               value: "command_screen_brightness_level"
             - label: "🔦 Taschenlampe"
               value: "command_flashlight"
@@ -551,29 +592,15 @@ device_command:
               value: "command_webview"
             - label: "📦 App starten"
               value: "command_launch_app"
-            - label: "⏯️ Medien-Steuerung"
+            - label: "⏯️ Medien"
               value: "command_media"
             - label: "🔄 Sensoren aktualisieren"
               value: "command_update_sensors"
-            - label: "🛑 TTS stoppen"
+            - label: "🔇 TTS stoppen"
               value: "command_stop_tts"
-            - label: "📡 Broadcast Intent"
-              value: "command_broadcast_intent"
-            - label: "📲 Activity starten"
-              value: "command_activity"
-            - label: "🔒 App-Sperre"
-              value: "command_app_lock"
-            - label: "🔌 Dauerverbindung"
-              value: "command_persistent_connection"
-            - label: "📻 BLE Transmitter"
-              value: "command_ble_transmitter"
-            - label: "📡 Beacon Monitor"
-              value: "command_beacon_monitor"
-            - label: "🗑️ Kanal entfernen"
-              value: "remove_channel"
     data:
-      name: Parameter
-      description: Befehlsspezifische Optionen
+      name: Daten
+      description: "Befehlsspezifische Daten (z.B. {command: 'turn_on'})"
       required: false
       selector:
         object:
@@ -581,67 +608,57 @@ device_command:
       name: Empfänger
       required: false
       selector:
-        text:
+        entity:
           multiple: true
-
-# =============================================================================
-# STANDORT & UPDATES
-# =============================================================================
+          filter:
+            - integration: mobile_app
 
 request_location_update:
   name: 📍 Standort anfordern
-  description: Fordert aktuellen Standort vom Gerät.
+  description: Fordert ein Standort-Update vom Gerät an.
   fields:
     target:
       name: Empfänger
       required: false
       selector:
-        text:
+        entity:
           multiple: true
+          filter:
+            - integration: mobile_app
 
 update_widgets:
-  name: 🔄 Widgets aktualisieren
-  description: Aktualisiert iOS Home Screen Widgets.
+  name: 🔄 iOS Widgets aktualisieren
+  description: Aktualisiert alle iOS Home Screen Widgets.
   fields:
     target:
       name: Empfänger
       required: false
       selector:
-        text:
+        entity:
           multiple: true
+          filter:
+            - integration: mobile_app
 
 update_complications:
-  name: ⌚ Watch aktualisieren
+  name: ⌚ Apple Watch aktualisieren
   description: Aktualisiert Apple Watch Complications.
   fields:
     target:
       name: Empfänger
       required: false
       selector:
-        text:
+        entity:
           multiple: true
-
-# =============================================================================
-# iOS BADGE
-# =============================================================================
-
-clear_badge:
-  name: 🔴 Badge löschen
-  description: Entfernt App-Badge auf iOS.
-  fields:
-    target:
-      name: Empfänger
-      required: false
-      selector:
-        text:
-          multiple: true
+          filter:
+            - integration: mobile_app
 
 set_badge:
-  name: 🔢 Badge setzen
-  description: Setzt App-Badge Nummer auf iOS.
+  name: 🔢 Badge setzen (iOS)
+  description: Setzt die App-Badge Nummer auf dem Home Screen.
   fields:
     badge:
-      name: Nummer
+      name: Badge-Nummer
+      description: "0-99"
       required: true
       selector:
         number:
@@ -651,16 +668,27 @@ set_badge:
       name: Empfänger
       required: false
       selector:
-        text:
+        entity:
           multiple: true
+          filter:
+            - integration: mobile_app
 
-# =============================================================================
-# ERWEITERTE BENACHRICHTIGUNG (Alle Optionen)
-# =============================================================================
+clear_badge:
+  name: 🔴 Badge löschen (iOS)
+  description: Entfernt die App-Badge Nummer.
+  fields:
+    target:
+      name: Empfänger
+      required: false
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - integration: mobile_app
 
 send_advanced:
-  name: ⚙️ Erweitert
-  description: Volle Kontrolle über alle Optionen.
+  name: ⚙️ Erweitert (alle Optionen)
+  description: Volle Kontrolle über alle Benachrichtigungs-Optionen.
   fields:
     title:
       name: Titel
@@ -677,37 +705,51 @@ send_advanced:
       name: Empfänger
       required: false
       selector:
-        text:
+        entity:
           multiple: true
-    # iOS
-    sound:
-      name: Sound (iOS)
+          filter:
+            - integration: mobile_app
+    # iOS Options
+    subtitle:
+      name: "iOS: Untertitel"
       required: false
+      advanced: true
+      selector:
+        text:
+    sound:
+      name: "iOS: Sound"
+      required: false
+      advanced: true
       selector:
         text:
     critical:
-      name: Kritisch (iOS)
+      name: "iOS: Kritisch"
+      description: "Durchbricht Nicht-Stören"
       required: false
+      advanced: true
       selector:
         boolean:
     volume:
-      name: Lautstärke (iOS)
+      name: "iOS: Kritisch-Lautstärke"
       required: false
+      advanced: true
       selector:
         number:
           min: 0
           max: 1
           step: 0.1
     badge:
-      name: Badge (iOS)
+      name: "iOS: Badge"
       required: false
+      advanced: true
       selector:
         number:
           min: 0
           max: 99
     interruption_level:
-      name: Interruption Level (iOS)
+      name: "iOS: Interruption Level"
       required: false
+      advanced: true
       selector:
         select:
           options:
@@ -715,25 +757,17 @@ send_advanced:
             - "active"
             - "time-sensitive"
             - "critical"
-    subtitle:
-      name: Untertitel (iOS)
-      required: false
-      selector:
-        text:
-    # Android
-    subject:
-      name: Subject (Android)
-      required: false
-      selector:
-        text:
+    # Android Options
     channel:
-      name: Kanal (Android)
+      name: "Android: Kanal"
       required: false
+      advanced: true
       selector:
         text:
     importance:
-      name: Wichtigkeit (Android)
+      name: "Android: Wichtigkeit"
       required: false
+      advanced: true
       selector:
         select:
           options:
@@ -743,35 +777,36 @@ send_advanced:
             - "high"
             - "max"
     color:
-      name: Farbe (Android)
+      name: "Android: Farbe"
+      description: "#RRGGBB Format"
       required: false
+      advanced: true
       selector:
         text:
     vibration_pattern:
-      name: Vibration (Android)
+      name: "Android: Vibration"
+      description: "z.B. 100, 1000, 100"
       required: false
-      example: "100, 1000, 100"
+      advanced: true
       selector:
         text:
     led_color:
-      name: LED-Farbe (Android)
+      name: "Android: LED-Farbe"
       required: false
-      selector:
-        text:
-    icon_url:
-      name: Icon-URL (Android)
-      required: false
+      advanced: true
       selector:
         text:
     notification_icon:
-      name: Status-Icon (Android)
+      name: "Android: Status-Icon"
+      description: "MDI Icon, z.B. mdi:bell"
       required: false
-      example: "mdi:bell"
+      advanced: true
       selector:
-        text:
+        icon:
     visibility:
-      name: Sichtbarkeit
+      name: "Android: Sichtbarkeit"
       required: false
+      advanced: true
       selector:
         select:
           options:
@@ -782,84 +817,86 @@ send_advanced:
             - label: "Geheim"
               value: "secret"
     car_ui:
-      name: Android Auto
+      name: "Android: Auto UI"
       required: false
+      advanced: true
       selector:
         boolean:
-    # Allgemein
-    group:
-      name: Gruppe
-      required: false
-      selector:
-        text:
+    # Common Options
     tag:
       name: Tag
       required: false
       selector:
         text:
+    group:
+      name: Gruppe
+      required: false
+      advanced: true
+      selector:
+        text:
     sticky:
       name: Sticky
       required: false
+      advanced: true
       selector:
         boolean:
     persistent:
-      name: Persistent
+      name: Dauerhaft
       required: false
+      advanced: true
       selector:
         boolean:
     alert_once:
-      name: Nur einmal
+      name: Nur einmal alarmieren
       required: false
+      advanced: true
       selector:
         boolean:
     timeout:
-      name: Timeout (Sek.)
+      name: Auto-Dismiss (Sekunden)
       required: false
+      advanced: true
       selector:
         number:
           min: 1
           max: 86400
     click_action:
-      name: Klick-Aktion
+      name: Bei Klick öffnen
       required: false
+      advanced: true
       selector:
         text:
-    # Anhänge
+    # Attachments
     image:
       name: Bild-URL
       required: false
+      advanced: true
       selector:
         text:
     video:
       name: Video-URL
       required: false
+      advanced: true
       selector:
         text:
     audio:
       name: Audio-URL
       required: false
+      advanced: true
       selector:
         text:
     camera_entity:
-      name: Kamera-Entity
+      name: Kamera
       required: false
+      advanced: true
       selector:
         entity:
           filter:
-            domain: camera
-    # Buttons
+            - domain: camera
+    # Actions
     actions:
       name: Buttons
       required: false
-      selector:
-        object:
-    action_data:
-      name: Action-Data
-      required: false
-      selector:
-        object:
-    data:
-      name: Extra-Daten
-      required: false
+      advanced: true
       selector:
         object:
