@@ -238,6 +238,9 @@ async def _async_register_panel(hass: HomeAssistant) -> None:
         [StaticPathConfig("/notify_manager_static", str(frontend_path), cache_headers=False)]
     )
     
+    # Version for cache busting
+    VERSION = "1.1.0"
+    
     frontend.async_register_built_in_panel(
         hass,
         component_name="custom",
@@ -249,7 +252,7 @@ async def _async_register_panel(hass: HomeAssistant) -> None:
                 "name": "notify-manager-panel",
                 "embed_iframe": False,
                 "trust_external": False,
-                "module_url": "/notify_manager_static/notify-manager-panel.js",
+                "module_url": f"/notify_manager_static/notify-manager-panel.js?v={VERSION}",
             }
         },
         require_admin=False,

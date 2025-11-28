@@ -24,11 +24,15 @@ send_notification:
           multiline: true
     target:
       name: Empfänger
-      description: Geräte-IDs (leer = alle)
+      description: |
+        Geräte-IDs ohne "mobile_app_" Präfix.
+        Beispiel: ["iphone", "pixel_7"]
+        Leer = alle konfigurierten Geräte.
+        Tipp: Geräte-IDs findest du unter Entwicklerwerkzeuge → Dienste → notify.
       required: false
+      example: ["iphone", "pixel_7"]
       selector:
-        text:
-          multiple: true
+        object:
     priority:
       name: Priorität
       required: false

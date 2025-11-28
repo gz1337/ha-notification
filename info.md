@@ -1,8 +1,8 @@
-{% if installed %}
-
 <p align="center">
   <img src="https://raw.githubusercontent.com/gz1337/ha-notify-manager/main/icon.png" alt="Notify Manager" width="120">
 </p>
+
+{% if installed %}
 
 ## Aktuelle Version: {{ version_installed }}
 

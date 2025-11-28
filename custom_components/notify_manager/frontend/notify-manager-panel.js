@@ -1,5 +1,5 @@
 /**
- * Notify Manager Panel - Mit Vorlagen & Gruppen-Manager
+ * Notify Manager Panel - Vollständig mit Kategorien, Sensoren, Vorlagen & Gruppen
  * Version 1.1.0
  */
 
@@ -26,7 +26,7 @@ class NotifyManagerPanel extends LitElement {
       _buttons: { type: Array },
       _selectedDevices: { type: Array },
       _selectedGroup: { type: String },
-      // Templates & Groups (gespeichert in localStorage)
+      // Templates & Groups (localStorage)
       _templates: { type: Array },
       _groups: { type: Array },
       // Edit mode
@@ -51,7 +51,6 @@ class NotifyManagerPanel extends LitElement {
     this._editingTemplate = null;
     this._editingGroup = null;
     
-    // Load from localStorage
     this._templates = this._loadFromStorage("notify_manager_templates", [
       { id: "doorbell", name: "🚪 Türklingel", title: "Türklingel", message: "Jemand ist an der Tür!", type: "image", priority: "high", buttons: [{ action: "DOOR_OPEN", title: "🔓 Öffnen" }, { action: "DOOR_IGNORE", title: "Ignorieren" }] },
       { id: "alarm", name: "🚨 Alarm", title: "Alarm!", message: "Bewegung erkannt", type: "buttons", priority: "critical", buttons: [{ action: "ALARM_OK", title: "✓ OK" }, { action: "ALARM_CALL", title: "📞 Anrufen" }] },
@@ -82,7 +81,7 @@ class NotifyManagerPanel extends LitElement {
       :host {
         display: block;
         padding: 16px;
-        max-width: 900px;
+        max-width: 1000px;
         margin: 0 auto;
         --accent: var(--primary-color, #03a9f4);
         --card-bg: var(--ha-card-background, var(--card-background-color, #fff));
@@ -94,152 +93,527 @@ class NotifyManagerPanel extends LitElement {
         --warning: #ff9800;
       }
 
-      h1 { font-size: 22px; font-weight: 500; margin: 0 0 16px 0; display: flex; align-items: center; gap: 10px; color: var(--text); }
-      h2 { font-size: 18px; font-weight: 500; margin: 0 0 12px 0; color: var(--text); }
-      h3 { font-size: 15px; font-weight: 500; margin: 16px 0 8px 0; color: var(--text); }
+      /* Header mit Logo */
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 20px;
+        padding: 16px;
+        background: linear-gradient(135deg, var(--accent), #0288d1);
+        border-radius: 16px;
+        color: white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      }
+      .header-logo {
+        width: 64px;
+        height: 64px;
+        border-radius: 12px;
+        background: white;
+        padding: 4px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      }
+      .header-info { flex: 1; }
+      .header-title {
+        font-size: 26px;
+        font-weight: 600;
+        margin: 0 0 4px 0;
+      }
+      .header-version {
+        font-size: 13px;
+        opacity: 0.9;
+      }
 
+      /* Tabs */
       .tabs {
-        display: flex; gap: 4px; margin-bottom: 16px;
-        border-bottom: 1px solid var(--border); padding-bottom: 8px;
+        display: flex;
+        gap: 4px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 8px;
         flex-wrap: wrap;
       }
       .tab {
-        padding: 8px 16px; background: none; border: none; border-radius: 8px;
-        cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text2); transition: all 0.2s;
+        padding: 10px 16px;
+        background: none;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text2);
+        transition: all 0.2s;
       }
       .tab:hover { background: rgba(0,0,0,0.05); color: var(--text); }
       .tab.active { background: var(--accent); color: white; }
 
+      /* Cards */
       .card {
-        background: var(--card-bg); border-radius: 12px; padding: 20px;
-        box-shadow: var(--ha-card-box-shadow, 0 2px 8px rgba(0,0,0,0.1)); margin-bottom: 16px;
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: var(--ha-card-box-shadow, 0 2px 8px rgba(0,0,0,0.1));
+        margin-bottom: 16px;
       }
-      .card-title { font-size: 16px; font-weight: 500; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+      .card-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: space-between;
+        color: var(--text);
+      }
 
-      .form-group { margin-bottom: 16px; }
-      label { display: block; font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 6px; }
-      input, textarea, select {
-        width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
-        font-size: 14px; background: var(--card-bg); color: var(--text); box-sizing: border-box; font-family: inherit;
+      /* Stats Grid */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
       }
-      input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(3,169,244,0.2); }
-      textarea { resize: vertical; min-height: 60px; }
+      .stat-card {
+        background: linear-gradient(135deg, rgba(3,169,244,0.1), rgba(3,169,244,0.05));
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+        border: 1px solid rgba(3,169,244,0.2);
+      }
+      .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--accent);
+      }
+      .stat-label {
+        font-size: 12px;
+        color: var(--text2);
+        margin-top: 4px;
+      }
+
+      /* Switch List */
+      .switch-list { display: flex; flex-direction: column; gap: 8px; }
+      .switch-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: rgba(0,0,0,0.02);
+        border-radius: 10px;
+        transition: all 0.2s;
+      }
+      .switch-item:hover { background: rgba(0,0,0,0.04); }
+      .switch-item.master {
+        background: linear-gradient(135deg, rgba(3,169,244,0.15), rgba(3,169,244,0.05));
+        border: 1px solid rgba(3,169,244,0.3);
+      }
+      .switch-info { display: flex; align-items: center; gap: 12px; }
+      .switch-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: var(--accent);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+      }
+      .switch-name { font-weight: 500; color: var(--text); }
+      .switch-toggle {
+        position: relative;
+        width: 50px;
+        height: 28px;
+        background: #ccc;
+        border-radius: 14px;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+      .switch-toggle.on { background: var(--accent); }
+      .switch-toggle::after {
+        content: '';
+        position: absolute;
+        width: 22px;
+        height: 22px;
+        background: white;
+        border-radius: 50%;
+        top: 3px;
+        left: 3px;
+        transition: all 0.3s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      }
+      .switch-toggle.on::after { left: 25px; }
+
+      /* Form Elements */
+      .form-group { margin-bottom: 16px; }
+      label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text2);
+        margin-bottom: 6px;
+      }
+      input, textarea, select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 14px;
+        background: var(--card-bg);
+        color: var(--text);
+        box-sizing: border-box;
+        font-family: inherit;
+      }
+      input:focus, textarea:focus, select:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(3,169,244,0.2);
+      }
+      textarea { resize: vertical; min-height: 80px; }
 
       .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-      .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-      @media (max-width: 600px) { .row, .row-3 { grid-template-columns: 1fr; } }
+      @media (max-width: 600px) { .row { grid-template-columns: 1fr; } }
 
-      .type-selector { display: flex; gap: 8px; flex-wrap: wrap; }
-      .type-btn {
-        padding: 10px 14px; border: 2px solid var(--border); border-radius: 10px;
-        background: var(--card-bg); cursor: pointer; font-size: 13px; font-weight: 500;
-        color: var(--text); transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+      /* Buttons & Chips */
+      .type-selector, .device-selector { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+      .type-btn, .device-chip {
+        padding: 10px 14px;
+        border: 2px solid var(--border);
+        border-radius: 10px;
+        background: var(--card-bg);
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text);
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
       }
-      .type-btn:hover { border-color: var(--accent); }
-      .type-btn.active { border-color: var(--accent); background: rgba(3,169,244,0.1); color: var(--accent); }
-
-      .device-selector { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-      .device-chip {
-        padding: 8px 14px; border: 2px solid var(--border); border-radius: 20px;
-        cursor: pointer; font-size: 13px; transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+      .type-btn:hover, .device-chip:hover { border-color: var(--accent); }
+      .type-btn.active, .device-chip.selected {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: white;
       }
-      .device-chip:hover { border-color: var(--accent); }
-      .device-chip.selected { border-color: var(--accent); background: var(--accent); color: white; }
       .device-chip.group { border-style: dashed; }
       .device-chip.group.selected { border-style: solid; }
 
+      /* Button List */
       .button-list { display: flex; flex-direction: column; gap: 8px; }
       .button-item { display: flex; gap: 8px; align-items: center; }
       .button-item input { flex: 1; }
 
+      /* Buttons */
       .btn {
-        padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer;
-        font-size: 14px; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
       }
-      .btn:hover { opacity: 0.85; }
+      .btn:hover { opacity: 0.85; transform: translateY(-1px); }
       .btn-primary { background: var(--accent); color: white; }
       .btn-success { background: var(--success); color: white; }
       .btn-danger { background: var(--error); color: white; }
-      .btn-warning { background: var(--warning); color: white; }
       .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
       .btn-small { padding: 6px 12px; font-size: 12px; }
-      .btn-icon { width: 36px; height: 36px; padding: 0; justify-content: center; }
+      .btn-icon { width: 36px; height: 36px; padding: 0; justify-content: center; border-radius: 50%; }
 
       .send-btn {
-        width: 100%; padding: 14px; background: var(--accent); color: white; border: none;
-        border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s;
-        display: flex; align-items: center; justify-content: center; gap: 8px;
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, var(--accent), #0288d1);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(3,169,244,0.3);
       }
-      .send-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-      .send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+      .send-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(3,169,244,0.4); }
+      .send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 
-      .success-msg { background: rgba(76,175,80,0.1); color: var(--success); padding: 12px; border-radius: 8px; margin-top: 12px; text-align: center; font-weight: 500; }
-      .error-msg { background: rgba(244,67,54,0.1); color: var(--error); padding: 12px; border-radius: 8px; margin-top: 12px; text-align: center; font-weight: 500; }
-
-      .template-grid, .group-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
-      .template-card, .group-card {
-        background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px;
-        padding: 14px; cursor: pointer; transition: all 0.2s;
+      /* Messages */
+      .success-msg {
+        background: rgba(76,175,80,0.1);
+        color: var(--success);
+        padding: 12px;
+        border-radius: 8px;
+        margin-top: 12px;
+        text-align: center;
+        font-weight: 500;
       }
-      .template-card:hover, .group-card:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-      .template-name, .group-name { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
-      .template-preview, .group-info { font-size: 12px; color: var(--text2); }
-      .template-actions, .group-actions { display: flex; gap: 8px; margin-top: 10px; }
+      .error-msg {
+        background: rgba(244,67,54,0.1);
+        color: var(--error);
+        padding: 12px;
+        border-radius: 8px;
+        margin-top: 12px;
+        text-align: center;
+        font-weight: 500;
+      }
 
+      /* Preview */
       .preview {
-        background: #1a1a1a; border-radius: 12px; padding: 16px; color: white; margin-top: 16px;
+        background: #1a1a1a;
+        border-radius: 12px;
+        padding: 16px;
+        color: white;
+        margin-top: 16px;
       }
       .preview-title { font-size: 12px; color: #888; margin-bottom: 8px; }
-      .preview-notification { background: #2d2d2d; border-radius: 10px; padding: 12px; }
+      .preview-notification {
+        background: #2d2d2d;
+        border-radius: 10px;
+        padding: 12px;
+      }
       .preview-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
       .preview-icon { width: 20px; height: 20px; background: var(--accent); border-radius: 4px; }
       .preview-app { font-size: 11px; color: #888; }
       .preview-t { font-weight: 600; font-size: 14px; }
       .preview-m { font-size: 13px; color: #ccc; margin-top: 4px; }
-      .preview-buttons { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #444; }
-      .preview-btn { flex: 1; padding: 8px; background: #444; border-radius: 6px; text-align: center; font-size: 12px; color: white; }
+      .preview-buttons {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid #444;
+      }
+      .preview-btn {
+        flex: 1;
+        padding: 8px;
+        background: #444;
+        border-radius: 6px;
+        text-align: center;
+        font-size: 12px;
+        color: white;
+      }
 
+      /* Grids */
+      .template-grid, .group-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 12px;
+      }
+      .template-card, .group-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .template-card:hover, .group-card:hover {
+        border-color: var(--accent);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+      }
+      .template-name, .group-name { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+      .template-preview, .group-info { font-size: 12px; color: var(--text2); }
+      .template-actions, .group-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+      /* Modal */
       .modal-overlay {
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
       }
       .modal {
-        background: var(--card-bg); border-radius: 12px; padding: 24px; max-width: 500px; width: 90%;
-        max-height: 80vh; overflow-y: auto;
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 24px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
       }
       .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
       .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
 
+      /* Empty State */
       .empty-state { text-align: center; padding: 40px; color: var(--text2); }
       .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
 
-      .header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-      .header-logo { width: 48px; height: 48px; border-radius: 10px; }
-      .header-title { font-size: 22px; font-weight: 500; margin: 0; color: var(--text); }
+      /* Help */
+      .help-section { margin-bottom: 20px; }
+      .help-section h3 { font-size: 15px; margin: 0 0 8px 0; color: var(--text); }
+      .help-section p, .help-section li { font-size: 13px; color: var(--text2); line-height: 1.6; }
+      .help-section code {
+        background: rgba(0,0,0,0.05);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 12px;
+      }
+      .help-section pre {
+        background: rgba(0,0,0,0.05);
+        padding: 12px;
+        border-radius: 8px;
+        overflow-x: auto;
+        font-size: 11px;
+        font-family: monospace;
+      }
     `;
   }
 
   render() {
     return html`
+      <!-- Header mit Logo -->
       <div class="header">
         <img src="/notify_manager_static/images/logo.png" alt="Logo" class="header-logo">
-        <h1 class="header-title">Notify Manager</h1>
+        <div class="header-info">
+          <h1 class="header-title">Notify Manager</h1>
+          <div class="header-version">v1.1.0 • ${this._getDevices().length} Geräte • ${this._getServiceCount()} Services</div>
+        </div>
       </div>
 
+      <!-- Tabs -->
       <div class="tabs">
         <button class="tab ${this._tab === 'send' ? 'active' : ''}" @click=${() => this._tab = 'send'}>📤 Senden</button>
+        <button class="tab ${this._tab === 'devices' ? 'active' : ''}" @click=${() => this._tab = 'devices'}>📱 Geräte</button>
+        <button class="tab ${this._tab === 'categories' ? 'active' : ''}" @click=${() => this._tab = 'categories'}>🏷️ Kategorien</button>
         <button class="tab ${this._tab === 'templates' ? 'active' : ''}" @click=${() => this._tab = 'templates'}>📋 Vorlagen</button>
         <button class="tab ${this._tab === 'groups' ? 'active' : ''}" @click=${() => this._tab = 'groups'}>👥 Gruppen</button>
         <button class="tab ${this._tab === 'help' ? 'active' : ''}" @click=${() => this._tab = 'help'}>❓ Hilfe</button>
       </div>
 
+      <!-- Tab Content -->
       ${this._tab === 'send' ? this._renderSendTab() : ''}
+      ${this._tab === 'devices' ? this._renderDevicesTab() : ''}
+      ${this._tab === 'categories' ? this._renderCategoriesTab() : ''}
       ${this._tab === 'templates' ? this._renderTemplatesTab() : ''}
       ${this._tab === 'groups' ? this._renderGroupsTab() : ''}
       ${this._tab === 'help' ? this._renderHelpTab() : ''}
 
+      <!-- Modals -->
       ${this._editingTemplate ? this._renderTemplateModal() : ''}
       ${this._editingGroup ? this._renderGroupModal() : ''}
+    `;
+  }
+
+  // ==================== DEVICES TAB ====================
+  _renderDevicesTab() {
+    const devices = this._getDevices();
+    const sensors = this._getSensors();
+
+    return html`
+      <!-- Statistiken -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">${devices.length}</div>
+          <div class="stat-label">Geräte</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${this._getServiceCount()}</div>
+          <div class="stat-label">Services</div>
+        </div>
+        ${sensors.map(s => html`
+          <div class="stat-card">
+            <div class="stat-value">${this.hass.states[s]?.state || '0'}</div>
+            <div class="stat-label">${this.hass.states[s]?.attributes?.friendly_name?.replace('Notify Manager ', '') || s}</div>
+          </div>
+        `)}
+      </div>
+
+      <!-- Verbundene Geräte -->
+      <div class="card">
+        <div class="card-title">📱 Verbundene Geräte</div>
+        <div class="device-selector">
+          ${devices.map(d => html`
+            <div class="device-chip selected">
+              ${d.toLowerCase().includes('iphone') || d.toLowerCase().includes('ipad') ? '📱' : '🤖'} 
+              ${d}
+            </div>
+          `)}
+        </div>
+        ${!devices.length ? html`<p style="color: var(--text2);">Keine Companion App Geräte gefunden.</p>` : ''}
+      </div>
+    `;
+  }
+
+  // ==================== CATEGORIES TAB ====================
+  _renderCategoriesTab() {
+    const switches = this._getSwitches();
+    const masterSwitch = switches.find(s => s.includes('alle_benachrichtigungen') || s.includes('all_notifications'));
+    const categorySwitches = switches.filter(s => s !== masterSwitch);
+
+    const categoryIcons = {
+      'alarm': '🚨',
+      'sicherheit': '🔒',
+      'security': '🔒',
+      'bewegung': '🏃',
+      'motion': '🏃',
+      'tuerklingel': '🚪',
+      'doorbell': '🚪',
+      'system': '⚙️',
+      'information': 'ℹ️',
+      'info': 'ℹ️',
+      'klima': '🌡️',
+      'climate': '🌡️',
+    };
+
+    const getIcon = (entityId) => {
+      for (const [key, icon] of Object.entries(categoryIcons)) {
+        if (entityId.toLowerCase().includes(key)) return icon;
+      }
+      return '🏷️';
+    };
+
+    return html`
+      <div class="card">
+        <div class="card-title">🎛️ Steuerelemente</div>
+        
+        <div class="switch-list">
+          <!-- Master Switch -->
+          ${masterSwitch ? html`
+            <div class="switch-item master">
+              <div class="switch-info">
+                <div class="switch-icon">🔔</div>
+                <div class="switch-name">Alle Benachrichtigungen</div>
+              </div>
+              <div class="switch-toggle ${this.hass.states[masterSwitch]?.state === 'on' ? 'on' : ''}"
+                   @click=${() => this._toggleSwitch(masterSwitch)}></div>
+            </div>
+          ` : ''}
+
+          <!-- Category Switches -->
+          ${categorySwitches.map(s => html`
+            <div class="switch-item">
+              <div class="switch-info">
+                <div class="switch-icon" style="background: ${this.hass.states[s]?.state === 'on' ? 'var(--accent)' : '#999'}">
+                  ${getIcon(s)}
+                </div>
+                <div class="switch-name">
+                  ${this.hass.states[s]?.attributes?.friendly_name?.replace('Notify Manager ', '').replace('Kategorie: ', '') || s}
+                </div>
+              </div>
+              <div class="switch-toggle ${this.hass.states[s]?.state === 'on' ? 'on' : ''}"
+                   @click=${() => this._toggleSwitch(s)}></div>
+            </div>
+          `)}
+        </div>
+
+        ${!switches.length ? html`<p style="color: var(--text2);">Keine Schalter gefunden.</p>` : ''}
+      </div>
     `;
   }
 
@@ -250,23 +624,21 @@ class NotifyManagerPanel extends LitElement {
 
     return html`
       <div class="card">
-        <div class="card-title">
-          <span>📨 Benachrichtigung senden</span>
-        </div>
+        <div class="card-title">📨 Schnell-Benachrichtigung</div>
 
-        <!-- Schnell-Vorlagen -->
+        <!-- Vorlagen -->
         <div class="form-group">
           <label>Vorlage verwenden</label>
-          <div class="device-selector">
+          <div class="type-selector">
             ${this._templates.map(t => html`
-              <div class="device-chip" @click=${() => this._applyTemplate(t)}>${t.name}</div>
+              <div class="type-btn" @click=${() => this._applyTemplate(t)}>${t.name}</div>
             `)}
           </div>
         </div>
 
-        <!-- Geräte / Gruppen Auswahl -->
+        <!-- Empfänger -->
         <div class="form-group">
-          <label>Empfänger auswählen</label>
+          <label>Empfänger</label>
           <div class="device-selector">
             <div class="device-chip ${this._selectedDevices.length === 0 && !this._selectedGroup ? 'selected' : ''}" 
                  @click=${() => { this._selectedDevices = []; this._selectedGroup = ''; }}>
@@ -281,7 +653,7 @@ class NotifyManagerPanel extends LitElement {
             ${devices.map(d => html`
               <div class="device-chip ${this._selectedDevices.includes(d) ? 'selected' : ''}"
                    @click=${() => this._toggleDevice(d)}>
-                ${d.includes('iphone') || d.includes('ipad') ? '📱' : '🤖'} ${d}
+                ${d.toLowerCase().includes('iphone') || d.toLowerCase().includes('ipad') ? '📱' : '🤖'} ${d}
               </div>
             `)}
           </div>
@@ -289,7 +661,7 @@ class NotifyManagerPanel extends LitElement {
 
         <!-- Typ -->
         <div class="form-group">
-          <label>Typ</label>
+          <label>Benachrichtigungstyp</label>
           <div class="type-selector">
             <button class="type-btn ${this._type === 'simple' ? 'active' : ''}" @click=${() => this._type = 'simple'}>📱 Einfach</button>
             <button class="type-btn ${this._type === 'buttons' ? 'active' : ''}" @click=${() => this._type = 'buttons'}>🔘 Mit Buttons</button>
@@ -345,7 +717,7 @@ class NotifyManagerPanel extends LitElement {
                   <button class="btn btn-danger btn-icon" @click=${() => this._removeButton(i)}>✕</button>
                 </div>
               `)}
-              <button class="btn btn-success" @click=${this._addButton}>+ Button hinzufügen</button>
+              <button class="btn btn-success btn-small" @click=${this._addButton}>+ Button hinzufügen</button>
             </div>
           </div>
         ` : ''}
@@ -354,17 +726,22 @@ class NotifyManagerPanel extends LitElement {
         <div class="preview">
           <div class="preview-title">📱 Vorschau</div>
           <div class="preview-notification">
-            <div class="preview-header"><div class="preview-icon"></div><span class="preview-app">HOME ASSISTANT</span></div>
+            <div class="preview-header">
+              <div class="preview-icon"></div>
+              <span class="preview-app">HOME ASSISTANT</span>
+            </div>
             <div class="preview-t">${this._title || 'Titel'}</div>
             <div class="preview-m">${this._message || 'Nachricht...'}</div>
             ${this._type === 'buttons' && this._buttons.length ? html`
-              <div class="preview-buttons">${this._buttons.map(b => html`<div class="preview-btn">${b.title || 'Button'}</div>`)}</div>
+              <div class="preview-buttons">
+                ${this._buttons.map(b => html`<div class="preview-btn">${b.title || 'Button'}</div>`)}
+              </div>
             ` : ''}
           </div>
         </div>
 
         <!-- Als Vorlage speichern -->
-        <div style="margin-top: 12px; display: flex; gap: 8px;">
+        <div style="margin-top: 12px;">
           <button class="btn btn-outline" @click=${this._saveAsTemplate}>💾 Als Vorlage speichern</button>
         </div>
 
@@ -397,7 +774,7 @@ class NotifyManagerPanel extends LitElement {
                 <div class="template-preview">Typ: ${t.type} | Priorität: ${t.priority}</div>
                 <div class="template-actions">
                   <button class="btn btn-primary btn-small" @click=${() => this._applyTemplateAndSwitch(t)}>Verwenden</button>
-                  <button class="btn btn-outline btn-small" @click=${() => this._editingTemplate = {...t}}>✏️</button>
+                  <button class="btn btn-outline btn-small" @click=${() => this._editingTemplate = {...t, buttons: [...(t.buttons || [])]}}>✏️</button>
                   <button class="btn btn-danger btn-small" @click=${() => this._deleteTemplate(t.id)}>🗑️</button>
                 </div>
               </div>
@@ -406,7 +783,7 @@ class NotifyManagerPanel extends LitElement {
         ` : html`
           <div class="empty-state">
             <div class="empty-state-icon">📋</div>
-            <p>Noch keine Vorlagen erstellt.</p>
+            <p>Noch keine eigenen Vorlagen erstellt.</p>
             <button class="btn btn-primary" @click=${() => this._editingTemplate = { id: '', name: '', title: '', message: '', type: 'simple', priority: 'normal', buttons: [] }}>
               Erste Vorlage erstellen
             </button>
@@ -423,7 +800,7 @@ class NotifyManagerPanel extends LitElement {
     return html`
       <div class="card">
         <div class="card-title">
-          <span>👥 Gerätegruppen verwalten</span>
+          <span>👥 Gerätegruppen</span>
           <button class="btn btn-primary btn-small" @click=${() => this._editingGroup = { id: '', name: '', devices: [] }}>
             + Neue Gruppe
           </button>
@@ -440,7 +817,7 @@ class NotifyManagerPanel extends LitElement {
                 <div class="group-name">👥 ${g.name}</div>
                 <div class="group-info">${g.devices?.length || 0} Gerät(e): ${g.devices?.join(', ') || 'Keine'}</div>
                 <div class="group-actions">
-                  <button class="btn btn-outline btn-small" @click=${() => this._editingGroup = {...g}}>✏️ Bearbeiten</button>
+                  <button class="btn btn-outline btn-small" @click=${() => this._editingGroup = {...g, devices: [...(g.devices || [])]}}>✏️ Bearbeiten</button>
                   <button class="btn btn-danger btn-small" @click=${() => this._deleteGroup(g.id)}>🗑️</button>
                 </div>
               </div>
@@ -458,13 +835,15 @@ class NotifyManagerPanel extends LitElement {
       </div>
 
       <div class="card">
-        <div class="card-title">📱 Verfügbare Geräte</div>
+        <div class="card-title">📱 Verfügbare Geräte für Gruppen</div>
         <div class="device-selector">
           ${devices.map(d => html`
-            <div class="device-chip">${d.includes('iphone') || d.includes('ipad') ? '📱' : '🤖'} ${d}</div>
+            <div class="device-chip">
+              ${d.toLowerCase().includes('iphone') || d.toLowerCase().includes('ipad') ? '📱' : '🤖'} ${d}
+            </div>
           `)}
         </div>
-        ${!devices.length ? html`<p style="color: var(--text2);">Keine Companion App Geräte gefunden.</p>` : ''}
+        ${!devices.length ? html`<p style="color: var(--text2);">Keine Geräte gefunden.</p>` : ''}
       </div>
     `;
   }
@@ -473,31 +852,46 @@ class NotifyManagerPanel extends LitElement {
   _renderHelpTab() {
     return html`
       <div class="card">
-        <div class="card-title">❓ Kurzanleitung</div>
+        <div class="card-title">❓ Hilfe & Dokumentation</div>
         
-        <h3>Services in Automationen</h3>
-        <p>Suche nach <strong>notify_manager</strong> und wähle einen Service:</p>
-        <ul>
-          <li>📱 <strong>send_notification</strong> - Einfache Nachricht</li>
-          <li>🔘 <strong>send_actionable</strong> - Mit Buttons</li>
-          <li>📷 <strong>send_with_image</strong> - Mit Kamera</li>
-          <li>🚨 <strong>send_alarm_confirmation</strong> - Schnell-Alarm</li>
-          <li>🔊 <strong>send_tts</strong> - Text vorlesen (Android)</li>
-        </ul>
+        <div class="help-section">
+          <h3>🚀 Schnellstart</h3>
+          <p>1. Wähle im <strong>Senden</strong>-Tab Empfänger und Typ<br>
+             2. Gib Titel und Nachricht ein<br>
+             3. Klicke auf <strong>Senden</strong></p>
+        </div>
 
-        <h3>Auf Button-Klicks reagieren</h3>
-        <pre style="background: rgba(0,0,0,0.05); padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 12px;">trigger:
+        <div class="help-section">
+          <h3>📋 Vorlagen</h3>
+          <p>Speichere häufig genutzte Benachrichtigungen als Vorlage. Diese erscheinen dann als Schnell-Buttons im Senden-Tab.</p>
+        </div>
+
+        <div class="help-section">
+          <h3>👥 Gruppen</h3>
+          <p>Erstelle Gerätegruppen wie "Familie" oder "Alle iPhones" um mehrere Geräte gleichzeitig zu benachrichtigen.</p>
+        </div>
+
+        <div class="help-section">
+          <h3>🔄 Auf Buttons reagieren</h3>
+          <pre>trigger:
   - platform: event
     event_type: mobile_app_notification_action
     event_data:
       action: "DEINE_ACTION_ID"</pre>
+        </div>
 
-        <h3>Tipps</h3>
-        <ul>
-          <li><strong>Tags</strong> nutzen um Benachrichtigungen zu ersetzen</li>
-          <li><strong>Kritische</strong> Priorität durchbricht "Nicht Stören"</li>
-          <li>Action IDs in <strong>GROSSBUCHSTABEN</strong></li>
-        </ul>
+        <div class="help-section">
+          <h3>📲 Verfügbare Services</h3>
+          <ul>
+            <li><code>send_notification</code> - Einfach</li>
+            <li><code>send_actionable</code> - Mit Buttons</li>
+            <li><code>send_with_image</code> - Mit Kamera</li>
+            <li><code>send_tts</code> - Text vorlesen</li>
+            <li><code>send_progress</code> - Fortschrittsbalken</li>
+            <li><code>device_command</code> - Geräte steuern</li>
+            <li><code>send_advanced</code> - Alle Optionen</li>
+          </ul>
+        </div>
       </div>
     `;
   }
@@ -511,7 +905,7 @@ class NotifyManagerPanel extends LitElement {
           <div class="modal-title">${t.id ? '✏️ Vorlage bearbeiten' : '📋 Neue Vorlage'}</div>
           
           <div class="form-group">
-            <label>Vorlagen-Name</label>
+            <label>Vorlagen-Name (mit Emoji)</label>
             <input type="text" .value=${t.name} @input=${(e) => t.name = e.target.value} placeholder="z.B. 🚪 Türklingel">
           </div>
           
@@ -522,7 +916,7 @@ class NotifyManagerPanel extends LitElement {
             </div>
             <div class="form-group">
               <label>Typ</label>
-              <select .value=${t.type} @change=${(e) => t.type = e.target.value}>
+              <select .value=${t.type} @change=${(e) => { t.type = e.target.value; this.requestUpdate(); }}>
                 <option value="simple">Einfach</option>
                 <option value="buttons">Mit Buttons</option>
                 <option value="image">Mit Kamera</option>
@@ -552,7 +946,7 @@ class NotifyManagerPanel extends LitElement {
               <div class="button-list">
                 ${(t.buttons || []).map((btn, i) => html`
                   <div class="button-item">
-                    <input type="text" placeholder="Action" .value=${btn.action} @input=${(e) => { t.buttons[i].action = e.target.value; this.requestUpdate(); }}>
+                    <input type="text" placeholder="Action ID" .value=${btn.action} @input=${(e) => { t.buttons[i].action = e.target.value; this.requestUpdate(); }}>
                     <input type="text" placeholder="Text" .value=${btn.title} @input=${(e) => { t.buttons[i].title = e.target.value; this.requestUpdate(); }}>
                     <button class="btn btn-danger btn-icon" @click=${() => { t.buttons.splice(i, 1); this.requestUpdate(); }}>✕</button>
                   </div>
@@ -586,7 +980,7 @@ class NotifyManagerPanel extends LitElement {
           </div>
 
           <div class="form-group">
-            <label>Geräte auswählen</label>
+            <label>Geräte auswählen (klicken zum Hinzufügen/Entfernen)</label>
             <div class="device-selector">
               ${devices.map(d => html`
                 <div class="device-chip ${(g.devices || []).includes(d) ? 'selected' : ''}"
@@ -596,7 +990,7 @@ class NotifyManagerPanel extends LitElement {
                        else g.devices = [...g.devices, d];
                        this.requestUpdate();
                      }}>
-                  ${d.includes('iphone') || d.includes('ipad') ? '📱' : '🤖'} ${d}
+                  ${d.toLowerCase().includes('iphone') || d.toLowerCase().includes('ipad') ? '📱' : '🤖'} ${d}
                 </div>
               `)}
             </div>
@@ -616,6 +1010,24 @@ class NotifyManagerPanel extends LitElement {
     return Object.keys(this.hass?.services?.notify || {})
       .filter(s => s.startsWith('mobile_app_'))
       .map(s => s.replace('mobile_app_', ''));
+  }
+
+  _getSwitches() {
+    return Object.keys(this.hass?.states || {})
+      .filter(e => e.startsWith('switch.notify_manager'));
+  }
+
+  _getSensors() {
+    return Object.keys(this.hass?.states || {})
+      .filter(e => e.startsWith('sensor.notify_manager'));
+  }
+
+  _getServiceCount() {
+    return Object.keys(this.hass?.services?.notify_manager || {}).length;
+  }
+
+  _toggleSwitch(entityId) {
+    this.hass.callService('switch', 'toggle', { entity_id: entityId });
   }
 
   _toggleDevice(device) {
@@ -645,7 +1057,7 @@ class NotifyManagerPanel extends LitElement {
   _updateButton(i, field, value) { this._buttons = this._buttons.map((btn, idx) => idx === i ? { ...btn, [field]: value } : btn); }
 
   _saveAsTemplate() {
-    const name = prompt("Name für die Vorlage:", this._title || "Neue Vorlage");
+    const name = prompt("Name für die Vorlage (mit Emoji):", this._title || "📝 Neue Vorlage");
     if (!name) return;
     
     const newTemplate = {
@@ -714,7 +1126,7 @@ class NotifyManagerPanel extends LitElement {
       let service = "send_notification";
       let data = { title: this._title || "Home Assistant", message: this._message, priority: this._priority };
 
-      // Zielgeräte bestimmen
+      // Zielgeräte
       let targets = [];
       if (this._selectedGroup) {
         const group = this._groups.find(g => g.id === this._selectedGroup);

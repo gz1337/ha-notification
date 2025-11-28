@@ -318,11 +318,3 @@ Das Panel bietet:
 ## 📄 Lizenz
 
 MIT License - siehe [LICENSE](LICENSE)
-
----
-
-## 🙏 Danksagung
-
-- [Home Assistant](https://www.home-assistant.io/)
-- [Home Assistant Companion App](https://companion.home-assistant.io/)
-- [HACS](https://hacs.xyz/)
