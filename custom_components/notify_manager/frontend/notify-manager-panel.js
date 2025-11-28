@@ -1,6 +1,6 @@
 /**
  * Notify Manager Panel - Vollständig mit Kategorien, Sensoren, Vorlagen & Gruppen
- * Version 1.2.1
+ * Version 1.2.2
  */
 
 import {
@@ -482,7 +482,7 @@ class NotifyManagerPanel extends LitElement {
         <img src="/notify_manager_static/images/logo.png" alt="Logo" class="header-logo">
         <div class="header-info">
           <h1 class="header-title">Notify Manager</h1>
-          <div class="header-version">v1.2.1 • ${this._getDevices().length} Geräte • ${this._getServiceCount()} Services</div>
+          <div class="header-version">v1.2.2 • ${this._getDevices().length} Geräte • ${this._getServiceCount()} Services</div>
         </div>
       </div>
 
@@ -708,7 +708,16 @@ class NotifyManagerPanel extends LitElement {
         <!-- Buttons -->
         ${this._type === 'buttons' ? html`
           <div class="form-group">
-            <label>Buttons</label>
+            <label>Button-Vorlage wählen</label>
+            <div class="type-selector" style="margin-bottom: 12px;">
+              <div class="type-btn ${this._buttons.length === 0 ? 'active' : ''}" @click=${() => this._buttons = []}>Keine</div>
+              <div class="type-btn" @click=${() => this._applyButtonTemplate('confirm_dismiss')}>✅ Bestätigen/Ablehnen</div>
+              <div class="type-btn" @click=${() => this._applyButtonTemplate('yes_no')}>👍 Ja/Nein</div>
+              <div class="type-btn" @click=${() => this._applyButtonTemplate('alarm_response')}>🚨 Alarm</div>
+              <div class="type-btn" @click=${() => this._applyButtonTemplate('door_response')}>🚪 Tür</div>
+              <div class="type-btn" @click=${() => this._applyButtonTemplate('reply')}>💬 Antwort</div>
+            </div>
+            <label>Buttons <span style="font-weight: normal; color: var(--text2);">(können angepasst werden)</span></label>
             <div class="button-list">
               ${this._buttons.map((btn, i) => html`
                 <div class="button-item">
@@ -1050,6 +1059,34 @@ class NotifyManagerPanel extends LitElement {
   _applyTemplateAndSwitch(t) {
     this._applyTemplate(t);
     this._tab = 'send';
+  }
+
+  _applyButtonTemplate(templateName) {
+    const buttonTemplates = {
+      confirm_dismiss: [
+        { action: 'CONFIRM', title: '✅ Bestätigen' },
+        { action: 'DISMISS', title: '❌ Ablehnen' }
+      ],
+      yes_no: [
+        { action: 'YES', title: '👍 Ja' },
+        { action: 'NO', title: '👎 Nein' }
+      ],
+      alarm_response: [
+        { action: 'ALARM_CONFIRM', title: '✅ Alles OK' },
+        { action: 'ALARM_SNOOZE', title: '⏰ Später' },
+        { action: 'ALARM_EMERGENCY', title: '🆘 Notfall!' }
+      ],
+      door_response: [
+        { action: 'DOOR_UNLOCK', title: '🔓 Öffnen' },
+        { action: 'DOOR_IGNORE', title: '🚪 Ignorieren' },
+        { action: 'DOOR_SPEAK', title: '🔊 Sprechen' }
+      ],
+      reply: [
+        { action: 'REPLY', title: '💬 Antworten', behavior: 'textInput', textInputButtonTitle: 'Senden', textInputPlaceholder: 'Nachricht...' }
+      ]
+    };
+    
+    this._buttons = [...(buttonTemplates[templateName] || [])];
   }
 
   _addButton() { this._buttons = [...this._buttons, { action: "", title: "" }]; }
