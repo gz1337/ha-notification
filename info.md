@@ -4,51 +4,64 @@
   <img src="https://raw.githubusercontent.com/gz1337/ha-notify-manager/main/icon.png" alt="Notify Manager" width="120">
 </p>
 
-## Änderungen in dieser Version
-
-### v{{ version_installed }}
-
-{% if version_installed.replace("v", "").replace(".","") | int < 100 %}
-- Erste Veröffentlichung
-- Vollständiges Panel mit Übersicht, Kategorien, Test und Verlauf
-- Services: send_notification, send_actionable, clear_notifications
-- Switches für Kategorien und Master-Schalter
-- Sensoren für Statistiken
-{% endif %}
+## Aktuelle Version: {{ version_installed }}
 
 ---
 
 {% endif %}
 
-## Features
+## 🚀 100% Companion App Features
 
-- 🔔 **Zentrale Benachrichtigungsverwaltung** - Alle Mobile App Benachrichtigungen an einem Ort
-- 📱 **Multi-Device Support** - Sende an mehrere Geräte gleichzeitig
-- 🏷️ **Kategorien** - Alarm, Sicherheit, Türklingel, Bewegung, System, Info
-- ⚡ **Prioritätsstufen** - Low, Normal, High, Critical
-- 🎛️ **Eigenes Panel** - Vollständige UI im Sidebar
-- 🔘 **Aktions-Benachrichtigungen** - Interaktive Buttons
-- 📊 **Statistiken** - Übersicht gesendeter Benachrichtigungen
+**18 Services** für vollständige Kontrolle über iOS & Android Benachrichtigungen.
 
-## Schnellstart
+### Benachrichtigungstypen
+- 📱 Einfache Benachrichtigungen
+- 🔘 Actionable Notifications (Buttons)
+- 📷 Kamera-Snapshots
+- 🎬 Video & Audio Anhänge
+- ✏️ Text-Eingabe
+- 🗺️ Karten mit Pin (iOS)
+- 📊 Fortschrittsbalken (Android)
+- ⏱️ Timer/Countdown (Android)
+- 🔊 Text-to-Speech (Android)
+- 🚨 Kritische Benachrichtigungen
 
-1. Installation über HACS
-2. Home Assistant neustarten
-3. Integration unter Einstellungen → Geräte & Dienste hinzufügen
-4. Geräte und Kategorien konfigurieren
-5. "Notify Manager" im Sidebar nutzen
+### Steuerung
+- 📲 20+ Android Geräte-Befehle
+- 📍 Standort anfordern
+- 🔄 iOS Widgets aktualisieren
+- ⌚ Apple Watch Complications
+- 🔴 App-Badges (iOS)
+
+### Frontend-Panel
+- 📤 **Senden** - Schnelltest
+- 📋 **Vorlagen** - Eigene Vorlagen speichern
+- 👥 **Gruppen** - Gerätegruppen erstellen
+
+---
 
 ## Beispiel
 
 ```yaml
 service: notify_manager.send_actionable
 data:
-  title: "🔒 Alarmanlage"
-  message: "Alarm ausgelöst!"
-  category: alarm
+  title: "🔔 Türklingel"
+  message: "Jemand ist an der Tür!"
+  camera_entity: camera.haustuer
+  target:
+    - iphone_max
   actions:
-    - action: "CONFIRM"
-      title: "Bestätigen"
-    - action: "DISMISS"
-      title: "Abbrechen"
+    - action: "DOOR_OPEN"
+      title: "🔓 Öffnen"
+    - action: "DOOR_IGNORE"
+      title: "Ignorieren"
+  priority: high
 ```
+
+---
+
+## Links
+
+- 📖 [Dokumentation](https://github.com/gz1337/ha-notify-manager)
+- 🐛 [Issues melden](https://github.com/gz1337/ha-notify-manager/issues)
+- 📋 [Companion App Docs](https://companion.home-assistant.io/docs/notifications/notifications-basic)
