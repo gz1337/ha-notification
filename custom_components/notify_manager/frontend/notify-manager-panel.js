@@ -1,6 +1,6 @@
 /**
  * Notify Manager Panel - Vollständig mit Kategorien, Sensoren, Vorlagen & Gruppen
- * Version 1.2.5
+ * Version 1.2.3.2
  */
 
 import {
@@ -534,7 +534,7 @@ class NotifyManagerPanel extends LitElement {
         <img src="/notify_manager_static/images/logo.png" alt="Logo" class="header-logo">
         <div class="header-info">
           <h1 class="header-title">Notify Manager</h1>
-          <div class="header-version">v1.2.5 • ${this._getDevices().length} Geräte • ${this._getServiceCount()} Services</div>
+          <div class="header-version">v1.2.3.2 • ${this._getDevices().length} Geräte • ${this._getServiceCount()} Services</div>
         </div>
       </div>
 
