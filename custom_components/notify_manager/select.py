@@ -1,9 +1,6 @@
 """Select entities for Notify Manager integration.
 
-Bietet Select-Entities für:
-- Button-Antwort Auswahl (für Conditions) - mit Vorlagen-Zuordnung
-- Standard-Priorität
-- Standard-Kategorie
+Provides select entity for notification template selection in automation conditions.
 """
 from __future__ import annotations
 
@@ -16,30 +13,9 @@ from homeassistant.core import HomeAssistant, callback, Event
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import (
-    DOMAIN,
-    ACTION_TEMPLATES,
-    DEFAULT_CATEGORIES,
-    PRIORITY_LEVELS,
-)
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
-
-# All individual button actions that can be selected
-BUTTON_ACTIONS = {
-    "none": "⏸️ Keine Auswahl",
-    "CONFIRM": "✅ Bestätigen",
-    "DISMISS": "❌ Ablehnen",
-    "YES": "👍 Ja",
-    "NO": "👎 Nein",
-    "ALARM_CONFIRM": "🚨 Alarm OK",
-    "ALARM_SNOOZE": "⏰ Später erinnern",
-    "ALARM_EMERGENCY": "🆘 Notfall",
-    "DOOR_UNLOCK": "🔓 Tür öffnen",
-    "DOOR_IGNORE": "🚪 Ignorieren",
-    "DOOR_SPEAK": "🔊 Sprechen",
-    "REPLY": "💬 Antwort gesendet",
-}
 
 
 async def async_setup_entry(
@@ -49,216 +25,99 @@ async def async_setup_entry(
 ) -> None:
     """Set up Notify Manager select entities."""
     entities = [
-        NotifyManagerButtonResponseSelect(hass, entry),
-        NotifyManagerLastTemplateSelect(hass, entry),
-        NotifyManagerPrioritySelect(hass, entry),
-        NotifyManagerCategorySelect(hass, entry),
+        NotifyManagerActiveTemplateSelect(hass, entry),
     ]
-    
+
     async_add_entities(entities)
 
 
-class NotifyManagerButtonResponseSelect(SelectEntity):
-    """Select entity that tracks and allows selecting button responses.
-    
+class NotifyManagerActiveTemplateSelect(SelectEntity):
+    """Select entity showing the last active notification template.
+
     This entity:
-    1. Automatically updates when a button is clicked on a notification
-    2. Can be used in automation conditions to check which button was clicked
-    3. Shows all possible button actions as options
-    4. Tracks which template/notification the response belongs to
+    1. Automatically updates when a notification is sent from a template
+    2. Can be used in automation conditions to check which template was last used
+    3. Shows all user-created templates from the frontend as options
+    4. Tracks button responses from notifications
     """
-    
+
     _attr_has_entity_name = True
-    
+
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize the select entity."""
         self.hass = hass
         self._entry = entry
-        self._attr_unique_id = f"{entry.entry_id}_button_response"
-        self._attr_name = "Button-Antwort"
+        self._attr_unique_id = f"{entry.entry_id}_active_template"
+        self._attr_name = "Active Notification"
+        self._attr_icon = "mdi:bell-check"
+        self._last_action = None
         self._last_action_time = None
         self._last_reply_text = None
-        self._last_template = None
-        self._last_tag = None
-        self._last_category = None
-        
-        self._attr_options = list(BUTTON_ACTIONS.values())
-        self._attr_current_option = BUTTON_ACTIONS["none"]
-    
-    async def async_added_to_hass(self) -> None:
-        """Register event listener when added to hass."""
-        await super().async_added_to_hass()
-        
-        @callback
-        def handle_action(event: Event) -> None:
-            """Handle notification action events - auto-update this select."""
-            action = event.data.get("action", "")
-            if action and action in BUTTON_ACTIONS:
-                self._attr_current_option = BUTTON_ACTIONS[action]
-                self._last_action_time = event.time_fired.isoformat()
-                self._last_reply_text = event.data.get("reply_text")
-                self._last_tag = event.data.get("tag")
-                self._last_category = event.data.get("category")
-                
-                # Try to get template from event data or hass.data
-                self._last_template = event.data.get("template_name")
-                if not self._last_template:
-                    # Check if we stored the template when sending
-                    data = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
-                    last_sent = data.get("last_sent_notification", {})
-                    if last_sent.get("tag") == self._last_tag:
-                        self._last_template = last_sent.get("template_name")
-                
-                # Store in hass.data for other components
-                data = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
-                data["last_button_action"] = action
-                data["last_button_time"] = self._last_action_time
-                data["last_button_template"] = self._last_template
-                data["last_button_tag"] = self._last_tag
-                
-                self.async_write_ha_state()
-                _LOGGER.debug("Button response updated: %s (template: %s)", action, self._last_template)
-        
-        self.hass.bus.async_listen("mobile_app_notification_action", handle_action)
-    
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._entry.entry_id)},
-            name="Notify Manager",
-            manufacturer="Custom Integration",
-            model="Notification Manager",
-            sw_version="1.2.5.0",
-        )
-    
-    @property
-    def icon(self) -> str:
-        """Return icon based on current selection."""
-        current = self._attr_current_option
-        if "Bestätigen" in current or "OK" in current:
-            return "mdi:check-circle"
-        elif "Ablehnen" in current or "Nein" in current:
-            return "mdi:close-circle"
-        elif "Notfall" in current:
-            return "mdi:alert"
-        elif "Tür" in current or "öffnen" in current:
-            return "mdi:door-open"
-        elif "Antwort" in current:
-            return "mdi:message-reply"
-        return "mdi:gesture-tap-button"
-    
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return extra state attributes including template info."""
-        action_key = self._get_action_key(self._attr_current_option)
-        return {
-            "action_id": action_key,
-            "last_action_time": self._last_action_time,
-            "reply_text": self._last_reply_text,
-            "template_name": self._last_template,
-            "tag": self._last_tag,
-            "category": self._last_category,
-            "available_actions": list(BUTTON_ACTIONS.keys()),
-        }
-    
-    def _get_action_key(self, label: str) -> str:
-        """Get action key from label."""
-        for key, value in BUTTON_ACTIONS.items():
-            if value == label:
-                return key
-        return "none"
-    
-    def _get_action_label(self, key: str) -> str:
-        """Get label from action key."""
-        return BUTTON_ACTIONS.get(key, BUTTON_ACTIONS["none"])
-    
-    async def async_select_option(self, option: str) -> None:
-        """Change the selected option (manual selection for testing/reset)."""
-        self._attr_current_option = option
-        action_key = self._get_action_key(option)
-        
-        # Update hass.data
-        data = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
-        data["last_button_action"] = action_key
-        
-        self.async_write_ha_state()
 
-
-class NotifyManagerLastTemplateSelect(SelectEntity):
-    """Select entity that tracks which template was last used.
-    
-    This allows conditions like:
-    - "If last button was from template X"
-    - Combined with button response for precise automation control
-    """
-    
-    _attr_has_entity_name = True
-    
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        """Initialize the select entity."""
-        self.hass = hass
-        self._entry = entry
-        self._attr_unique_id = f"{entry.entry_id}_last_template"
-        self._attr_name = "Letzte Vorlage"
-        self._last_action_time = None
-        
-        # Build options from default templates + placeholder for user templates
-        self._template_options = {
-            "none": "⏸️ Keine Vorlage",
-            "🚪 Türklingel": "🚪 Türklingel",
-            "🚨 Alarm": "🚨 Alarm",
-            "⏰ Erinnerung": "⏰ Erinnerung",
-            "📦 Paket": "📦 Paket",
-            "🔔 Standard": "🔔 Standard",
-            "confirm_dismiss": "✅❌ Bestätigen/Ablehnen",
-            "yes_no": "👍👎 Ja/Nein",
-            "alarm_response": "🚨 Alarm-Antwort",
-            "door_response": "🚪 Tür-Antwort",
-        }
-        
+        # Will be populated from HA storage
+        self._template_options = {"none": "No active notification"}
         self._attr_options = list(self._template_options.values())
         self._attr_current_option = self._template_options["none"]
-    
+
     async def async_added_to_hass(self) -> None:
         """Register event listener when added to hass."""
         await super().async_added_to_hass()
-        
-        # Update options with user templates from storage
+
+        # Load templates from storage
         await self._update_template_options()
-        
+
+        @callback
+        def handle_notification_sent(event: Event) -> None:
+            """Handle when a notification is sent - track the template."""
+            template_name = event.data.get("template_name")
+            if template_name and template_name in self._template_options:
+                self._attr_current_option = self._template_options.get(template_name, template_name)
+                self.async_write_ha_state()
+
         @callback
         def handle_action(event: Event) -> None:
-            """Handle notification action - track which template it came from."""
-            # Get template from event or hass.data
+            """Handle notification action events."""
+            action = event.data.get("action", "")
+            self._last_action = action
+            self._last_action_time = event.time_fired.isoformat()
+            self._last_reply_text = event.data.get("reply_text")
+
+            # Try to get template from event data or hass.data
             template_name = event.data.get("template_name")
-            tag = event.data.get("tag")
-            
             if not template_name:
                 data = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
                 last_sent = data.get("last_sent_notification", {})
+                tag = event.data.get("tag")
                 if last_sent.get("tag") == tag:
                     template_name = last_sent.get("template_name")
-            
-            if template_name and template_name in self._template_options:
-                self._attr_current_option = self._template_options[template_name]
-                self._last_action_time = event.time_fired.isoformat()
-                self.async_write_ha_state()
-        
+
+            if template_name:
+                option = self._template_options.get(template_name, template_name)
+                if option in self._attr_options:
+                    self._attr_current_option = option
+                    self.async_write_ha_state()
+
+            _LOGGER.debug("Button action received: %s (template: %s)", action, template_name)
+
         self.hass.bus.async_listen("mobile_app_notification_action", handle_action)
-    
+        self.hass.bus.async_listen(f"{DOMAIN}_notification_sent", handle_notification_sent)
+
     async def _update_template_options(self) -> None:
-        """Update options with user-created templates."""
+        """Update options with user-created templates from storage."""
+        self._template_options = {"none": "No active notification"}
+
+        # Get templates from hass.data (loaded from persistent storage)
         data = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
         user_templates = data.get("user_templates", [])
-        
+
         for template in user_templates:
             name = template.get("name", "")
-            if name and name not in self._template_options:
-                self._template_options[name] = name
-        
+            template_id = template.get("id", name)
+            if name:
+                self._template_options[template_id] = name
+
         self._attr_options = list(self._template_options.values())
-    
+
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info."""
@@ -267,180 +126,20 @@ class NotifyManagerLastTemplateSelect(SelectEntity):
             name="Notify Manager",
             manufacturer="Custom Integration",
             model="Notification Manager",
-            sw_version="1.2.5.0",
+            sw_version="1.2.6.0",
         )
-    
-    @property
-    def icon(self) -> str:
-        """Return icon."""
-        return "mdi:file-document-outline"
-    
+
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return extra state attributes."""
         return {
+            "last_action": self._last_action,
             "last_action_time": self._last_action_time,
-            "available_templates": list(self._template_options.keys()),
+            "reply_text": self._last_reply_text,
+            "available_templates": [k for k in self._template_options.keys() if k != "none"],
         }
-    
+
     async def async_select_option(self, option: str) -> None:
-        """Change the selected option."""
+        """Change the selected option (for manual reset)."""
         self._attr_current_option = option
-        self.async_write_ha_state()
-
-
-class NotifyManagerPrioritySelect(SelectEntity):
-    """Select entity for default priority."""
-    
-    _attr_has_entity_name = True
-    _attr_translation_key = "default_priority"
-    
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        """Initialize the select entity."""
-        self.hass = hass
-        self._entry = entry
-        self._attr_unique_id = f"{entry.entry_id}_default_priority"
-        self._attr_name = "Standard-Priorität"
-        
-        self._priority_labels = {
-            "low": "🔇 Niedrig (Leise)",
-            "normal": "📱 Normal",
-            "high": "🔔 Hoch (Wichtig)",
-            "critical": "🚨 Kritisch (Durchbricht Nicht-Stören)",
-        }
-        
-        self._attr_options = list(self._priority_labels.values())
-        
-        # Get current from config
-        current_priority = entry.data.get("default_priority", "normal")
-        self._attr_current_option = self._priority_labels.get(current_priority, self._priority_labels["normal"])
-    
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._entry.entry_id)},
-            name="Notify Manager",
-            manufacturer="Custom Integration",
-            model="Notification Manager",
-            sw_version="1.2.5.0",
-        )
-    
-    @property
-    def icon(self) -> str:
-        """Return icon."""
-        if "Kritisch" in str(self._attr_current_option):
-            return "mdi:alert-circle"
-        elif "Hoch" in str(self._attr_current_option):
-            return "mdi:bell-ring"
-        elif "Niedrig" in str(self._attr_current_option):
-            return "mdi:bell-sleep"
-        return "mdi:bell"
-    
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return extra state attributes."""
-        priority_key = self._get_priority_key(self._attr_current_option)
-        priority_config = PRIORITY_LEVELS.get(priority_key, {})
-        
-        return {
-            "priority_key": priority_key,
-            "importance": priority_config.get("importance"),
-            "interruption_level": priority_config.get("interruption_level"),
-            "is_critical": priority_config.get("critical", False),
-        }
-    
-    def _get_priority_key(self, label: str) -> str:
-        """Get priority key from label."""
-        for key, value in self._priority_labels.items():
-            if value == label:
-                return key
-        return "normal"
-    
-    async def async_select_option(self, option: str) -> None:
-        """Change the selected option."""
-        self._attr_current_option = option
-        priority_key = self._get_priority_key(option)
-        
-        # Store in hass.data
-        self.hass.data[DOMAIN].setdefault("default_priority", "normal")
-        self.hass.data[DOMAIN]["default_priority"] = priority_key
-        
-        self.async_write_ha_state()
-
-
-class NotifyManagerCategorySelect(SelectEntity):
-    """Select entity for default category."""
-    
-    _attr_has_entity_name = True
-    _attr_translation_key = "default_category"
-    
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        """Initialize the select entity."""
-        self.hass = hass
-        self._entry = entry
-        self._attr_unique_id = f"{entry.entry_id}_default_category"
-        self._attr_name = "Standard-Kategorie"
-        
-        # Build from DEFAULT_CATEGORIES
-        self._category_labels = {
-            "none": "Keine Kategorie",
-        }
-        for cat_id, cat_config in DEFAULT_CATEGORIES.items():
-            icon = cat_config.get("icon", "mdi:bell").replace("mdi:", "")
-            name = cat_config.get("name", cat_id.title())
-            self._category_labels[cat_id] = f"{name}"
-        
-        self._attr_options = list(self._category_labels.values())
-        self._attr_current_option = self._category_labels["none"]
-    
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._entry.entry_id)},
-            name="Notify Manager",
-            manufacturer="Custom Integration",
-            model="Notification Manager",
-            sw_version="1.2.5.0",
-        )
-    
-    @property
-    def icon(self) -> str:
-        """Return icon."""
-        category_key = self._get_category_key(self._attr_current_option)
-        if category_key in DEFAULT_CATEGORIES:
-            return DEFAULT_CATEGORIES[category_key].get("icon", "mdi:tag")
-        return "mdi:tag"
-    
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return extra state attributes."""
-        category_key = self._get_category_key(self._attr_current_option)
-        category_config = DEFAULT_CATEGORIES.get(category_key, {})
-        
-        return {
-            "category_key": category_key,
-            "priority": category_config.get("priority"),
-            "sound": category_config.get("sound"),
-            "channel": category_config.get("channel"),
-            "color": category_config.get("color"),
-        }
-    
-    def _get_category_key(self, label: str) -> str:
-        """Get category key from label."""
-        for key, value in self._category_labels.items():
-            if value == label:
-                return key
-        return "none"
-    
-    async def async_select_option(self, option: str) -> None:
-        """Change the selected option."""
-        self._attr_current_option = option
-        category_key = self._get_category_key(option)
-        
-        # Store in hass.data
-        self.hass.data[DOMAIN].setdefault("default_category", "none")
-        self.hass.data[DOMAIN]["default_category"] = category_key
-        
         self.async_write_ha_state()

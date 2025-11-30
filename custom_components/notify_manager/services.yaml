@@ -89,23 +89,15 @@ save_groups:
         object:
 
 send_to_group:
-  name: 👥 An Gruppe senden
-  description: Sendet eine Benachrichtigung an alle Geräte in einer Gruppe.
+  name: 👥 Send to Group
+  description: Sends a notification to all devices in a group. Groups are created in the Notify Manager panel.
   fields:
     group_name:
-      name: Gruppe
-      description: "Name der Gruppe (aus dem Notify Manager Panel)"
+      name: Group
+      description: "Name of the group (from Notify Manager panel). Create groups in the panel first."
       required: true
       selector:
-        select:
-          custom_value: true
-          options:
-            - label: "👨‍👩‍👧‍👦 Familie"
-              value: "👨‍👩‍👧‍👦 Familie"
-            - label: "🏠 Alle Geräte"
-              value: "🏠 Alle Geräte"
-            - label: "👤 Admins"
-              value: "👤 Admins"
+        text:
     title:
       name: Titel
       required: true
@@ -183,19 +175,11 @@ send_notification:
           filter:
             - integration: mobile_app
     group_name:
-      name: Oder an Gruppe senden
-      description: "Wähle eine Gruppe aus dem Notify Manager Panel"
+      name: Or send to Group
+      description: "Group name from Notify Manager panel"
       required: false
       selector:
-        select:
-          custom_value: true
-          options:
-            - label: "👨‍👩‍👧‍👦 Familie"
-              value: "👨‍👩‍👧‍👦 Familie"
-            - label: "🏠 Alle Geräte"
-              value: "🏠 Alle Geräte"
-            - label: "👤 Admins"
-              value: "👤 Admins"
+        text:
     priority:
       name: Priorität
       required: false

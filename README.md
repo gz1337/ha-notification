@@ -5,8 +5,8 @@
 </p>
 
 <p align="center">
-  <strong>Vollständige Benachrichtigungsverwaltung für Home Assistant</strong><br>
-  100% der Companion App Features - einfach und übersichtlich
+  <strong>Complete notification management for Home Assistant</strong><br>
+  100% Companion App features - simple and organized
 </p>
 
 <p align="center">
@@ -21,277 +21,189 @@
 
 ---
 
-## 📋 Changelog
+## Changelog
 
-### v1.2.5.0
-- 🎯 **Device Conditions**: Vorlage-Filter bei "Letzte Button-Aktion" - Automationen reagieren nur auf Antworten von bestimmten Vorlagen
-- 👥 **Gruppen in Services**: Gespeicherte Gruppen können direkt in allen Benachrichtigungs-Services ausgewählt werden
-- ☕ **Buy me a coffee**: Support-Button im Panel-Header und README
-- 🐛 **Bug-Fix**: Doppelte `async_setup_entry` in sensor.py behoben
-- 🐛 **Bug-Fix**: Duplizierter Code in select.py entfernt
-- 🔧 **Code-Qualität**: Bereinigung und Konsistenz-Verbesserungen
-
-### v1.2.3.6
-- 🎯 **Vorlage-Zuordnung bei Button-Antworten** - Jetzt wird getrackt von welcher Vorlage die Antwort kam
-- 👥 **Neuer Service "An Gruppe senden"** - Sende an alle Geräte einer Gruppe
-- 📋 **Neue Select-Entity "Letzte Vorlage"** - Für Conditions: "Wenn Antwort von Vorlage X"
-- 💾 **Persistente Gruppen-Speicherung** - Gruppen werden im HA Storage gespeichert
-
-### v1.2.3.4
-- 🎯 Select "Button-Antwort" zeigt jetzt EINZELNE Buttons als Optionen
-- ✅❌👍👎🚨⏰🆘 Alle Button-Typen als separate Optionen
-
-### v1.2.3.3
-- ✨ Neuer Sensor "Letzter Button"
-- 💾 Persistente Vorlagen-Speicherung
-- 🔌 WebSocket API
-
-### v1.2.3
-- Button-Editor mit einzelnen Feldern
-- `send_from_template` Service
-
-### v1.2.0
-- Device Triggers, Conditions und Actions
-
-### v1.1.0
-- 18 Services, Frontend-Panel
+### v1.2.6.0
+- **Simplified Device Page**: Only Panel button and Sidebar toggle on the device page - removed cluttered controls
+- **Removed Categories Tab**: Cleaner UI with focus on essential features (Send, Devices/Groups, Templates, Help)
+- **Auto Language Detection**: Frontend automatically detects German or English based on Home Assistant language settings
+- **Dashboard Dropdown**: "On click open" field now shows all available dashboards and views in a dropdown with optgroup organization
+- **Simplified Device Conditions**: Only shows created notification templates for automation conditions (removed category switches)
+- **Groups Sync**: Groups created in the frontend are now properly synced to the backend services (no more mock data)
+- **Code Cleanup**: Removed deprecated category entities and streamlined codebase
 
 ---
 
-## 🖼️ Integration Icon
+## Features
 
-Um das Icon anzuzeigen, erstelle einen PR an [home-assistant/brands](https://github.com/home-assistant/brands):
-1. Ordner: `custom_integrations/notify_manager/`
-2. Dateien: `icon.png` (256x256), `icon@2x.png` (512x512), `logo.png`
+### Core Features
+- **Central Notification Hub** - All Companion App features in one place
+- **iOS & Android** - Full support for both platforms
+- **Custom Frontend Panel** - With template and group manager
+- **Device Groups** - Send to multiple devices at once
+- **Templates** - Save frequently used notifications
 
----
+### Notification Types
+- **Actionable Notifications** - Interactive buttons
+- **Camera Snapshots** - Images directly in the notification
+- **Video & Audio** - Media attachments
+- **Text Input** - Users can reply
+- **Maps with Pin** - Location notifications (iOS)
+- **Progress Bars** - Progress display (Android)
+- **Timer/Countdown** - Chronometer (Android)
+- **Text-to-Speech** - Read text aloud (Android)
 
-## ✨ Features
-
-### Grundfunktionen
-- 🔔 **Zentrale Benachrichtigungsverwaltung** - Alle Companion App Features an einem Ort
-- 📱 **iOS & Android** - Vollständige Unterstützung für beide Plattformen
-- 🎛️ **Eigenes Frontend-Panel** - Mit Vorlagen- und Gruppen-Manager
-- 👥 **Gerätegruppen** - Sende an mehrere Geräte gleichzeitig
-- 📋 **Vorlagen** - Speichere häufig genutzte Benachrichtigungen
-
-### Benachrichtigungstypen
-- 🔘 **Actionable Notifications** - Interaktive Buttons
-- 📷 **Kamera-Snapshots** - Bilder direkt in der Benachrichtigung
-- 🎬 **Video & Audio** - Medien-Anhänge
-- ✏️ **Text-Eingabe** - Benutzer können antworten
-- 🗺️ **Karten mit Pin** - Standort-Benachrichtigungen (iOS)
-- 📊 **Fortschrittsbalken** - Progress-Anzeige (Android)
-- ⏱️ **Timer/Countdown** - Chronometer (Android)
-- 🔊 **Text-to-Speech** - Text vorlesen (Android)
-
-### Erweiterte Features
-- 🚨 **Kritische Benachrichtigungen** - Durchbrechen Nicht-Stören (iOS)
-- 📲 **20+ Geräte-Befehle** - Steuere Android-Geräte
-- 🔴 **Badge-Steuerung** - App-Badges setzen/löschen (iOS)
-- ⌚ **Apple Watch** - Complications aktualisieren
-- 📱 **Widgets** - iOS Home Screen Widgets aktualisieren
+### Advanced Features
+- **Critical Notifications** - Override Do Not Disturb (iOS)
+- **20+ Device Commands** - Control Android devices
+- **Badge Control** - Set/clear app badges (iOS)
+- **Apple Watch** - Update complications
+- **Widgets** - Update iOS Home Screen widgets
 
 ---
 
-## 📦 Installation
+## Installation
 
-### HACS (Empfohlen)
+### HACS (Recommended)
 
-1. Öffne **HACS** in Home Assistant
-2. Klicke auf die **drei Punkte** (⋮) oben rechts
-3. Wähle **Benutzerdefinierte Repositories**
-4. Füge hinzu:
+1. Open **HACS** in Home Assistant
+2. Click the **three dots** (...) in the top right
+3. Select **Custom repositories**
+4. Add:
    - **Repository**: `https://github.com/gz1337/ha-notify-manager`
-   - **Kategorie**: `Integration`
-5. Klicke **Hinzufügen**
-6. Suche nach **Notify Manager** und installiere
-7. **Starte Home Assistant neu**
+   - **Category**: `Integration`
+5. Click **Add**
+6. Search for **Notify Manager** and install
+7. **Restart Home Assistant**
 
-### Manuelle Installation
+### Manual Installation
 
-1. Lade das [neueste Release](https://github.com/gz1337/ha-notify-manager/releases) herunter
-2. Kopiere `custom_components/notify_manager` nach `config/custom_components/`
-3. Starte Home Assistant neu
-
----
-
-## ⚙️ Einrichtung
-
-1. Gehe zu **Einstellungen** → **Geräte & Dienste**
-2. Klicke **+ Integration hinzufügen**
-3. Suche nach **Notify Manager**
-4. Wähle deine Companion App Geräte aus
-5. Fertig! "Notify Manager" erscheint in der Sidebar
+1. Download the [latest release](https://github.com/gz1337/ha-notify-manager/releases)
+2. Copy `custom_components/notify_manager` to `config/custom_components/`
+3. Restart Home Assistant
 
 ---
 
-## 🚀 Verfügbare Services (18 total)
+## Setup
 
-### Basis-Services
-
-| Service | Beschreibung |
-|---------|--------------|
-| `send_notification` | 📱 Einfache Benachrichtigung |
-| `send_actionable` | 🔘 Mit Buttons |
-| `send_with_image` | 📷 Mit Bild/Kamera |
-| `send_alarm_confirmation` | 🚨 Alarm-Vorlagen |
-| `send_text_input` | ✏️ Mit Texteingabe |
-| `clear_notifications` | 🗑️ Löschen |
-
-### Erweiterte Services
-
-| Service | Beschreibung | Plattform |
-|---------|--------------|-----------|
-| `send_tts` | 🔊 Text vorlesen | Android |
-| `send_map` | 🗺️ Karte mit Pin | iOS |
-| `send_media` | 🎬 Video/Audio | Beide |
-| `send_progress` | 📊 Fortschrittsbalken | Android |
-| `send_chronometer` | ⏱️ Timer/Countdown | Android |
-| `send_advanced` | ⚙️ Alle Optionen | Beide |
-
-### Steuerungs-Services
-
-| Service | Beschreibung | Plattform |
-|---------|--------------|-----------|
-| `device_command` | 📲 20+ Geräte-Befehle | Android |
-| `request_location_update` | 📍 Standort anfordern | Beide |
-| `update_widgets` | 🔄 Widgets aktualisieren | iOS |
-| `update_complications` | ⌚ Watch aktualisieren | iOS |
-| `set_badge` | 🔢 Badge setzen | iOS |
-| `clear_badge` | 🔴 Badge löschen | iOS |
+1. Go to **Settings** > **Devices & Services**
+2. Click **+ Add Integration**
+3. Search for **Notify Manager**
+4. Select your Companion App devices
+5. Done! "Notify Manager" appears in the sidebar
 
 ---
 
-## 📝 Beispiele
+## Available Services (18 total)
 
-### Einfache Benachrichtigung
+### Basic Services
+
+| Service | Description |
+|---------|-------------|
+| `send_notification` | Simple notification |
+| `send_actionable` | With buttons |
+| `send_with_image` | With image/camera |
+| `send_alarm_confirmation` | Alarm templates |
+| `send_text_input` | With text input |
+| `clear_notifications` | Clear notifications |
+
+### Extended Services
+
+| Service | Description | Platform |
+|---------|-------------|----------|
+| `send_tts` | Text-to-speech | Android |
+| `send_map` | Map with pin | iOS |
+| `send_media` | Video/Audio | Both |
+| `send_progress` | Progress bar | Android |
+| `send_chronometer` | Timer/Countdown | Android |
+| `send_advanced` | All options | Both |
+
+### Control Services
+
+| Service | Description | Platform |
+|---------|-------------|----------|
+| `device_command` | 20+ device commands | Android |
+| `request_location_update` | Request location | Both |
+| `update_widgets` | Update widgets | iOS |
+| `update_complications` | Update watch | iOS |
+| `set_badge` | Set badge | iOS |
+| `clear_badge` | Clear badge | iOS |
+
+---
+
+## Examples
+
+### Simple Notification
 
 ```yaml
 service: notify_manager.send_notification
 data:
-  title: "Willkommen"
-  message: "Du bist zu Hause!"
+  title: "Welcome"
+  message: "You're home!"
   priority: normal
 ```
 
-### Mit Buttons
+### With Buttons
 
 ```yaml
 service: notify_manager.send_actionable
 data:
-  title: "🔔 Türklingel"
-  message: "Jemand ist an der Tür!"
+  title: "Doorbell"
+  message: "Someone is at the door!"
   target:
     - iphone_max
   actions:
     - action: "DOOR_OPEN"
-      title: "🔓 Öffnen"
+      title: "Open"
     - action: "DOOR_IGNORE"
-      title: "Ignorieren"
+      title: "Ignore"
   priority: high
   tag: doorbell
 ```
 
-### Mit Kamera-Snapshot
+### With Camera Snapshot
 
 ```yaml
 service: notify_manager.send_with_image
 data:
-  title: "📷 Bewegung"
-  message: "Bewegung an der Haustür erkannt"
-  camera_entity: camera.haustuer
+  title: "Motion Detected"
+  message: "Motion at the front door"
+  camera_entity: camera.front_door
   priority: high
   actions:
     - action: "VIEW_LIVE"
-      title: "Live ansehen"
+      title: "View Live"
 ```
 
-### Text vorlesen (Android)
+### Send to Group
+
+```yaml
+service: notify_manager.send_to_group
+data:
+  group_name: "Family"
+  title: "Dinner Time"
+  message: "Dinner is ready!"
+  priority: normal
+```
+
+### Text-to-Speech (Android)
 
 ```yaml
 service: notify_manager.send_tts
 data:
-  tts_text: "Achtung, die Waschmaschine ist fertig!"
+  tts_text: "Attention, the washing machine is done!"
   media_stream: alarm_stream
   target:
     - pixel_7
 ```
 
-### Fortschrittsbalken (Android)
-
-```yaml
-service: notify_manager.send_progress
-data:
-  title: "Download"
-  message: "Datei wird heruntergeladen..."
-  progress: 75
-  tag: download_progress
-```
-
-### Geräte-Befehl (Android)
-
-```yaml
-service: notify_manager.device_command
-data:
-  command: command_dnd
-  data:
-    command: "off"
-  target:
-    - pixel_7
-```
-
-### Alle Optionen (Advanced)
-
-```yaml
-service: notify_manager.send_advanced
-data:
-  title: "Test"
-  message: "Nachricht mit allen Optionen"
-  target:
-    - iphone_max
-  # iOS
-  sound: "default"
-  critical: true
-  badge: 5
-  interruption_level: "time-sensitive"
-  subtitle: "Untertitel"
-  # Android
-  channel: "alerts"
-  importance: "high"
-  color: "#FF0000"
-  led_color: "red"
-  vibration_pattern: "100, 1000, 100"
-  notification_icon: "mdi:bell"
-  car_ui: true
-  # Allgemein
-  group: "alerts"
-  tag: "test_123"
-  sticky: true
-  persistent: true
-  timeout: 300
-  click_action: "/lovelace/cameras"
-  # Anhänge
-  image: "/local/photo.jpg"
-  video: "/media/local/clip.mp4"
-  camera_entity: camera.front_door
-  # Buttons
-  actions:
-    - action: "CONFIRM"
-      title: "✓ OK"
-      icon: "sfsymbols:checkmark.circle"
-    - action: "DISMISS"
-      title: "✗ Abbrechen"
-      destructive: true
-```
-
 ---
 
-## 🔄 Auf Button-Klicks reagieren
+## Reacting to Button Clicks
 
 ```yaml
 automation:
-  - alias: "Türklingel - Tür öffnen"
+  - alias: "Doorbell - Open Door"
     trigger:
       - platform: event
         event_type: mobile_app_notification_action
@@ -300,7 +212,7 @@ automation:
     action:
       - service: lock.unlock
         target:
-          entity_id: lock.haustuer
+          entity_id: lock.front_door
       - service: notify_manager.clear_notifications
         data:
           tag: doorbell
@@ -308,62 +220,32 @@ automation:
 
 ---
 
-## 📲 Android Geräte-Befehle
+## Frontend Panel
 
-Der `device_command` Service unterstützt:
+The panel provides:
 
-| Befehl | Beschreibung |
-|--------|--------------|
-| `command_dnd` | Nicht stören |
-| `command_ringer_mode` | Klingelton |
-| `command_volume_level` | Lautstärke |
-| `command_screen_on` | Bildschirm an |
-| `command_screen_brightness_level` | Helligkeit |
-| `command_flashlight` | Taschenlampe |
-| `command_bluetooth` | Bluetooth |
-| `command_high_accuracy_mode` | GPS High-Accuracy |
-| `command_webview` | Dashboard öffnen |
-| `command_launch_app` | App starten |
-| `command_media` | Medien-Steuerung |
-| `command_update_sensors` | Sensoren aktualisieren |
-| `command_stop_tts` | TTS stoppen |
-| `command_broadcast_intent` | Intent senden |
-| `command_activity` | Activity starten |
-| `command_app_lock` | App-Sperre |
-| `command_persistent_connection` | Dauerverbindung |
-| `command_ble_transmitter` | BLE Transmitter |
-| `command_beacon_monitor` | Beacon Monitor |
-| `remove_channel` | Kanal entfernen |
+- **Send** - Quickly test notifications
+- **Devices/Groups** - Manage devices and create groups
+- **Templates** - Create and manage templates
+- **Help** - Quick reference guide
 
 ---
 
-## 🎛️ Frontend-Panel
+## Troubleshooting
 
-Das Panel bietet:
+### No devices found
+- Companion App installed and connected?
+- Notifications enabled in the app?
 
-- **📤 Senden** - Schnell Benachrichtigungen testen
-- **📋 Vorlagen** - Eigene Vorlagen erstellen und verwalten
-- **👥 Gruppen** - Gerätegruppen für Mehrfach-Versand
-- **❓ Hilfe** - Kurzanleitung
+### Notifications not arriving
+- Test with `notify.mobile_app_xxx` directly
 
----
-
-## 🐛 Fehlerbehebung
-
-### Keine Geräte gefunden
-- Companion App installiert und verbunden?
-- Benachrichtigungen in der App erlaubt?
-
-### Benachrichtigungen kommen nicht an
-- Kategorie aktiviert?
-- Teste mit `notify.mobile_app_xxx` direkt
-
-### Panel wird nicht angezeigt
-- Browser-Cache leeren
-- Home Assistant neu starten
+### Panel not showing
+- Clear browser cache
+- Restart Home Assistant
 
 ---
 
-## 📄 Lizenz
+## License
 
-MIT License - siehe [LICENSE](LICENSE)
+MIT License - see [LICENSE](LICENSE)
