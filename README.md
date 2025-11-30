@@ -15,9 +15,21 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/gz1337/ha-notify-manager?style=flat-square" alt="License"></a>
 </p>
 
+<p align="center">
+  <a href="https://www.buymeacoffee.com/edflock"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me A Coffee"></a>
+</p>
+
 ---
 
 ## 📋 Changelog
+
+### v1.2.5.0
+- 🎯 **Device Conditions**: Vorlage-Filter bei "Letzte Button-Aktion" - Automationen reagieren nur auf Antworten von bestimmten Vorlagen
+- 👥 **Gruppen in Services**: Gespeicherte Gruppen können direkt in allen Benachrichtigungs-Services ausgewählt werden
+- ☕ **Buy me a coffee**: Support-Button im Panel-Header und README
+- 🐛 **Bug-Fix**: Doppelte `async_setup_entry` in sensor.py behoben
+- 🐛 **Bug-Fix**: Duplizierter Code in select.py entfernt
+- 🔧 **Code-Qualität**: Bereinigung und Konsistenz-Verbesserungen
 
 ### v1.2.3.6
 - 🎯 **Vorlage-Zuordnung bei Button-Antworten** - Jetzt wird getrackt von welcher Vorlage die Antwort kam

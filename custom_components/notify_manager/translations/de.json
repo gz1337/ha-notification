@@ -127,6 +127,7 @@
       "action": "Button-Aktion",
       "category": "Kategorie",
       "device": "Gerät",
+      "template_name": "Von Vorlage (optional)",
       "within_seconds": "Innerhalb von (Sekunden)"
     }
   },

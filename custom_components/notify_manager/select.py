@@ -129,7 +129,7 @@ class NotifyManagerButtonResponseSelect(SelectEntity):
             name="Notify Manager",
             manufacturer="Custom Integration",
             model="Notification Manager",
-            sw_version="1.2.3.6",
+            sw_version="1.2.5.0",
         )
     
     @property
@@ -267,7 +267,7 @@ class NotifyManagerLastTemplateSelect(SelectEntity):
             name="Notify Manager",
             manufacturer="Custom Integration",
             model="Notification Manager",
-            sw_version="1.2.3.6",
+            sw_version="1.2.5.0",
         )
     
     @property
@@ -286,90 +286,6 @@ class NotifyManagerLastTemplateSelect(SelectEntity):
     async def async_select_option(self, option: str) -> None:
         """Change the selected option."""
         self._attr_current_option = option
-        self.async_write_ha_state()
-        self._attr_current_option = BUTTON_ACTIONS["none"]
-    
-    async def async_added_to_hass(self) -> None:
-        """Register event listener when added to hass."""
-        await super().async_added_to_hass()
-        
-        @callback
-        def handle_action(event: Event) -> None:
-            """Handle notification action events - auto-update this select."""
-            action = event.data.get("action", "")
-            if action and action in BUTTON_ACTIONS:
-                self._attr_current_option = BUTTON_ACTIONS[action]
-                self._last_action_time = event.time_fired.isoformat()
-                self._last_reply_text = event.data.get("reply_text")
-                
-                # Store in hass.data for other components
-                data = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
-                data["last_button_action"] = action
-                data["last_button_time"] = self._last_action_time
-                
-                self.async_write_ha_state()
-                _LOGGER.debug("Button response updated: %s", action)
-        
-        self.hass.bus.async_listen("mobile_app_notification_action", handle_action)
-    
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._entry.entry_id)},
-            name="Notify Manager",
-            manufacturer="Custom Integration",
-            model="Notification Manager",
-            sw_version="1.2.3.6",
-        )
-    
-    @property
-    def icon(self) -> str:
-        """Return icon based on current selection."""
-        current = self._attr_current_option
-        if "Bestätigen" in current or "OK" in current:
-            return "mdi:check-circle"
-        elif "Ablehnen" in current or "Nein" in current:
-            return "mdi:close-circle"
-        elif "Notfall" in current:
-            return "mdi:alert"
-        elif "Tür" in current or "öffnen" in current:
-            return "mdi:door-open"
-        elif "Antwort" in current:
-            return "mdi:message-reply"
-        return "mdi:gesture-tap-button"
-    
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return extra state attributes."""
-        action_key = self._get_action_key(self._attr_current_option)
-        return {
-            "action_id": action_key,
-            "last_action_time": self._last_action_time,
-            "reply_text": self._last_reply_text,
-            "available_actions": list(BUTTON_ACTIONS.keys()),
-        }
-    
-    def _get_action_key(self, label: str) -> str:
-        """Get action key from label."""
-        for key, value in BUTTON_ACTIONS.items():
-            if value == label:
-                return key
-        return "none"
-    
-    def _get_action_label(self, key: str) -> str:
-        """Get label from action key."""
-        return BUTTON_ACTIONS.get(key, BUTTON_ACTIONS["none"])
-    
-    async def async_select_option(self, option: str) -> None:
-        """Change the selected option (manual selection for testing/reset)."""
-        self._attr_current_option = option
-        action_key = self._get_action_key(option)
-        
-        # Update hass.data
-        data = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
-        data["last_button_action"] = action_key
-        
         self.async_write_ha_state()
 
 
@@ -407,7 +323,7 @@ class NotifyManagerPrioritySelect(SelectEntity):
             name="Notify Manager",
             manufacturer="Custom Integration",
             model="Notification Manager",
-            sw_version="1.2.3.6",
+            sw_version="1.2.5.0",
         )
     
     @property
@@ -486,7 +402,7 @@ class NotifyManagerCategorySelect(SelectEntity):
             name="Notify Manager",
             manufacturer="Custom Integration",
             model="Notification Manager",
-            sw_version="1.2.3.6",
+            sw_version="1.2.5.0",
         )
     
     @property

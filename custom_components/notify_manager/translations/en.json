@@ -127,6 +127,7 @@
       "action": "Action (e.g. CONFIRM, DISMISS)",
       "category": "Category",
       "device": "Device",
+      "template_name": "From Template (optional)",
       "within_seconds": "Within (seconds)"
     }
   },

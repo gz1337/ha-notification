@@ -174,7 +174,7 @@ send_notification:
         text:
           multiline: true
     target:
-      name: Empfänger
+      name: Empfänger (einzelne Geräte)
       description: "Geräte-Namen (ohne 'mobile_app_'). Findest du unter Entwicklerwerkzeuge → Dienste → notify.mobile_app_XXX"
       required: false
       selector:
@@ -182,6 +182,20 @@ send_notification:
           multiple: true
           filter:
             - integration: mobile_app
+    group_name:
+      name: Oder an Gruppe senden
+      description: "Wähle eine Gruppe aus dem Notify Manager Panel"
+      required: false
+      selector:
+        select:
+          custom_value: true
+          options:
+            - label: "👨‍👩‍👧‍👦 Familie"
+              value: "👨‍👩‍👧‍👦 Familie"
+            - label: "🏠 Alle Geräte"
+              value: "🏠 Alle Geräte"
+            - label: "👤 Admins"
+              value: "👤 Admins"
     priority:
       name: Priorität
       required: false

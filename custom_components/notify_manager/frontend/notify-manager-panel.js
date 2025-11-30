@@ -1,6 +1,6 @@
 /**
  * Notify Manager Panel - Vollständig mit Kategorien, Sensoren, Vorlagen & Gruppen
- * Version 1.2.3.3
+ * Version 1.2.5.0
  */
 
 import {
@@ -32,6 +32,8 @@ class NotifyManagerPanel extends LitElement {
       // Edit mode
       _editingTemplate: { type: Object },
       _editingGroup: { type: Object },
+      // Inline group editing in devices tab
+      _activeGroupId: { type: String },
     };
   }
 
@@ -50,7 +52,8 @@ class NotifyManagerPanel extends LitElement {
     this._selectedGroup = "";
     this._editingTemplate = null;
     this._editingGroup = null;
-    
+    this._activeGroupId = null;
+
     // Default templates (will be overwritten by HA storage)
     this._templates = [
       { id: "doorbell", name: "🚪 Türklingel", title: "Türklingel", message: "Jemand ist an der Tür!", type: "image", priority: "high", buttons: [{ action: "DOOR_OPEN", title: "🔓 Öffnen" }, { action: "DOOR_IGNORE", title: "Ignorieren" }] },
@@ -165,7 +168,7 @@ class NotifyManagerPanel extends LitElement {
         padding: 4px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       }
-      .header-info { flex: 1; }
+      .header-info { }
       .header-title {
         font-size: 26px;
         font-weight: 600;
@@ -174,6 +177,22 @@ class NotifyManagerPanel extends LitElement {
       .header-version {
         font-size: 13px;
         opacity: 0.9;
+      }
+      .header-spacer {
+        flex: 1;
+      }
+      .bmc-button {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        transition: transform 0.2s;
+      }
+      .bmc-button:hover {
+        transform: scale(1.05);
+      }
+      .bmc-button img {
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       }
 
       /* Tabs */
@@ -472,6 +491,15 @@ class NotifyManagerPanel extends LitElement {
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         transform: translateY(-2px);
       }
+      .group-card.active-group {
+        border-color: var(--accent);
+        background: linear-gradient(135deg, rgba(3,169,244,0.15), rgba(3,169,244,0.05));
+        box-shadow: 0 0 0 2px var(--accent);
+      }
+      .device-chip.clickable:hover {
+        transform: scale(1.05);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      }
       .template-name, .group-name { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
       .template-preview, .group-info { font-size: 12px; color: var(--text2); }
       .template-actions, .group-actions { display: flex; gap: 8px; margin-top: 10px; }
@@ -534,17 +562,20 @@ class NotifyManagerPanel extends LitElement {
         <img src="/notify_manager_static/images/logo.png" alt="Logo" class="header-logo">
         <div class="header-info">
           <h1 class="header-title">Notify Manager</h1>
-          <div class="header-version">v1.2.3.6 • ${this._getDevices().length} Geräte • ${this._getServiceCount()} Services</div>
+          <div class="header-version">v1.2.5.0 • ${this._getDevices().length} Geräte • ${this._getServiceCount()} Services</div>
         </div>
+        <div class="header-spacer"></div>
+        <a href="https://www.buymeacoffee.com/edflock" target="_blank" rel="noopener noreferrer" class="bmc-button">
+          <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 40px;">
+        </a>
       </div>
 
       <!-- Tabs -->
       <div class="tabs">
         <button class="tab ${this._tab === 'send' ? 'active' : ''}" @click=${() => this._tab = 'send'}>📤 Senden</button>
-        <button class="tab ${this._tab === 'devices' ? 'active' : ''}" @click=${() => this._tab = 'devices'}>📱 Geräte</button>
+        <button class="tab ${this._tab === 'devices' ? 'active' : ''}" @click=${() => this._tab = 'devices'}>📱 Geräte & Gruppen</button>
         <button class="tab ${this._tab === 'categories' ? 'active' : ''}" @click=${() => this._tab = 'categories'}>🏷️ Kategorien</button>
         <button class="tab ${this._tab === 'templates' ? 'active' : ''}" @click=${() => this._tab = 'templates'}>📋 Vorlagen</button>
-        <button class="tab ${this._tab === 'groups' ? 'active' : ''}" @click=${() => this._tab = 'groups'}>👥 Gruppen</button>
         <button class="tab ${this._tab === 'help' ? 'active' : ''}" @click=${() => this._tab = 'help'}>❓ Hilfe</button>
       </div>
 
@@ -553,7 +584,6 @@ class NotifyManagerPanel extends LitElement {
       ${this._tab === 'devices' ? this._renderDevicesTab() : ''}
       ${this._tab === 'categories' ? this._renderCategoriesTab() : ''}
       ${this._tab === 'templates' ? this._renderTemplatesTab() : ''}
-      ${this._tab === 'groups' ? this._renderGroupsTab() : ''}
       ${this._tab === 'help' ? this._renderHelpTab() : ''}
 
       <!-- Modals -->
@@ -566,6 +596,7 @@ class NotifyManagerPanel extends LitElement {
   _renderDevicesTab() {
     const devices = this._getDevices();
     const sensors = this._getSensors();
+    const activeGroup = this._activeGroupId ? this._groups.find(g => g.id === this._activeGroupId) : null;
 
     return html`
       <!-- Statistiken -->
@@ -573,6 +604,10 @@ class NotifyManagerPanel extends LitElement {
         <div class="stat-card">
           <div class="stat-value">${devices.length}</div>
           <div class="stat-label">Geräte</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${this._groups.length}</div>
+          <div class="stat-label">Gruppen</div>
         </div>
         <div class="stat-card">
           <div class="stat-value">${this._getServiceCount()}</div>
@@ -586,20 +621,94 @@ class NotifyManagerPanel extends LitElement {
         `)}
       </div>
 
+      <!-- Gruppen -->
+      <div class="card">
+        <div class="card-title">
+          <span>👥 Gerätegruppen</span>
+          <button class="btn btn-primary btn-small" @click=${() => this._editingGroup = { id: '', name: '', devices: [] }}>
+            + Neue Gruppe
+          </button>
+        </div>
+
+        <p style="color: var(--text2); font-size: 13px; margin-bottom: 12px;">
+          Klicke auf eine Gruppe, um Geräte hinzuzufügen oder zu entfernen.
+        </p>
+
+        ${this._groups.length ? html`
+          <div class="group-grid" style="margin-bottom: 16px;">
+            ${this._groups.map(g => html`
+              <div class="group-card ${this._activeGroupId === g.id ? 'active-group' : ''}"
+                   @click=${() => this._activeGroupId = this._activeGroupId === g.id ? null : g.id}>
+                <div class="group-name">👥 ${g.name}</div>
+                <div class="group-info">${g.devices?.length || 0} Gerät(e): ${g.devices?.slice(0, 3).join(', ') || 'Keine'}${g.devices?.length > 3 ? '...' : ''}</div>
+                <div class="group-actions" @click=${(e) => e.stopPropagation()}>
+                  <button class="btn btn-outline btn-small" @click=${() => this._editingGroup = {...g, devices: [...(g.devices || [])]}}>✏️ Umbenennen</button>
+                  <button class="btn btn-danger btn-small" @click=${() => this._deleteGroup(g.id)}>🗑️</button>
+                </div>
+              </div>
+            `)}
+          </div>
+        ` : html`
+          <div style="text-align: center; padding: 20px; color: var(--text2);">
+            <p>Noch keine Gruppen erstellt.</p>
+          </div>
+        `}
+      </div>
+
       <!-- Verbundene Geräte -->
       <div class="card">
-        <div class="card-title">📱 Verbundene Geräte</div>
+        <div class="card-title">
+          📱 Verbundene Geräte
+          ${activeGroup ? html`
+            <span style="font-size: 13px; font-weight: normal; color: var(--accent);">
+              → Klicke Geräte für "${activeGroup.name}"
+            </span>
+          ` : ''}
+        </div>
+
+        ${activeGroup ? html`
+          <p style="color: var(--accent); font-size: 13px; margin-bottom: 12px; padding: 8px; background: rgba(3,169,244,0.1); border-radius: 8px;">
+            🔵 = in Gruppe "${activeGroup.name}" | Klicke zum Hinzufügen/Entfernen
+          </p>
+        ` : html`
+          <p style="color: var(--text2); font-size: 13px; margin-bottom: 12px;">
+            Wähle oben eine Gruppe aus, um Geräte hinzuzufügen oder zu entfernen.
+          </p>
+        `}
+
         <div class="device-selector">
-          ${devices.map(d => html`
-            <div class="device-chip selected">
-              ${d.toLowerCase().includes('iphone') || d.toLowerCase().includes('ipad') ? '📱' : '🤖'} 
-              ${d}
-            </div>
-          `)}
+          ${devices.map(d => {
+            const isInActiveGroup = activeGroup && (activeGroup.devices || []).includes(d);
+            return html`
+              <div class="device-chip ${isInActiveGroup ? 'selected' : ''} ${activeGroup ? 'clickable' : ''}"
+                   @click=${() => activeGroup ? this._toggleDeviceInGroup(d, activeGroup.id) : null}
+                   style="${activeGroup ? 'cursor: pointer;' : ''}">
+                ${d.toLowerCase().includes('iphone') || d.toLowerCase().includes('ipad') ? '📱' : '🤖'}
+                ${d}
+                ${isInActiveGroup ? html`<span style="margin-left: 4px;">✓</span>` : ''}
+              </div>
+            `;
+          })}
         </div>
         ${!devices.length ? html`<p style="color: var(--text2);">Keine Companion App Geräte gefunden.</p>` : ''}
       </div>
     `;
+  }
+
+  _toggleDeviceInGroup(device, groupId) {
+    const group = this._groups.find(g => g.id === groupId);
+    if (!group) return;
+
+    group.devices = group.devices || [];
+    if (group.devices.includes(device)) {
+      group.devices = group.devices.filter(d => d !== device);
+    } else {
+      group.devices = [...group.devices, device];
+    }
+
+    this._groups = [...this._groups];
+    this._saveToStorage("notify_manager_groups", this._groups);
+    this.requestUpdate();
   }
 
   // ==================== CATEGORIES TAB ====================

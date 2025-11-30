@@ -39,6 +39,20 @@ KNOWN_ACTIONS = {
     "REPLY": "💬 Antwort",
 }
 
+# Known templates for condition filtering
+KNOWN_TEMPLATES = {
+    "any": "Alle Vorlagen",
+    "🚪 Türklingel": "🚪 Türklingel",
+    "🚨 Alarm": "🚨 Alarm",
+    "⏰ Erinnerung": "⏰ Erinnerung",
+    "📦 Paket": "📦 Paket",
+    "🔔 Standard": "🔔 Standard",
+    "confirm_dismiss": "✅❌ Bestätigen/Ablehnen",
+    "yes_no": "👍👎 Ja/Nein",
+    "alarm_response": "🚨 Alarm-Antwort",
+    "door_response": "🚪 Tür-Antwort",
+}
+
 # Condition types
 CONDITION_TYPES = {
     "last_action_was": "Letzte Button-Aktion war",
@@ -54,6 +68,7 @@ CONDITION_SCHEMA = DEVICE_CONDITION_BASE_SCHEMA.extend(
         vol.Optional("category"): vol.In(list(DEFAULT_CATEGORIES.keys())),
         vol.Optional("action"): cv.string,
         vol.Optional("device"): cv.string,
+        vol.Optional("template_name"): cv.string,
         vol.Optional("within_seconds", default=300): cv.positive_int,
     }
 )
@@ -144,17 +159,49 @@ def async_condition_from_config(
         
         elif condition_type == "last_action_was":
             action = config.get("action")
+            template_name = config.get("template_name")
             within_seconds = config.get("within_seconds", 300)
-            
+
             if not action:
                 return False
-            
+
             for entry_data in domain_data.values():
-                if isinstance(entry_data, dict) and "pending_actions" in entry_data:
+                if isinstance(entry_data, dict):
+                    # Check last_button_action (from select entity)
+                    last_action = entry_data.get("last_button_action")
+                    last_template = entry_data.get("last_button_template")
+                    last_time = entry_data.get("last_button_time")
+
+                    if last_action == action:
+                        # Check template filter if specified
+                        if template_name and template_name != "any":
+                            if last_template != template_name:
+                                continue
+
+                        # Check time window
+                        if last_time:
+                            from datetime import datetime, timedelta
+                            try:
+                                timestamp = datetime.fromisoformat(last_time)
+                                if datetime.now() - timestamp < timedelta(seconds=within_seconds):
+                                    return True
+                            except (ValueError, TypeError):
+                                pass
+                        else:
+                            # No timestamp, but action matches
+                            return True
+
+                    # Fallback: check pending_actions
                     pending = entry_data.get("pending_actions", {})
                     if action in pending:
                         from datetime import datetime, timedelta
                         action_data = pending[action]
+
+                        # Check template filter
+                        if template_name and template_name != "any":
+                            if action_data.get("template_name") != template_name:
+                                continue
+
                         timestamp_str = action_data.get("timestamp")
                         if timestamp_str:
                             try:
@@ -211,11 +258,12 @@ async def async_get_condition_capabilities(
         return {}
     
     elif condition_type == "last_action_was":
-        # Provide dropdown with known actions
+        # Provide dropdown with known actions and templates
         return {
             "extra_fields": vol.Schema(
                 {
                     vol.Required("action"): vol.In(list(KNOWN_ACTIONS.keys())),
+                    vol.Optional("template_name", default="any"): vol.In(list(KNOWN_TEMPLATES.keys())),
                     vol.Optional("within_seconds", default=300): cv.positive_int,
                 }
             )

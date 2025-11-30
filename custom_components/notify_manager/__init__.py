@@ -112,6 +112,7 @@ SEND_NOTIFICATION_SCHEMA = vol.Schema(
         vol.Required(ATTR_TITLE): cv.string,
         vol.Required(ATTR_MESSAGE): cv.string,
         vol.Optional(ATTR_TARGET): vol.All(cv.ensure_list, [cv.string]),
+        vol.Optional("group_name"): cv.string,
         vol.Optional(ATTR_CATEGORY): cv.string,
         vol.Optional(ATTR_PRIORITY, default="normal"): vol.In(["low", "normal", "high", "critical"]),
         vol.Optional(ATTR_TAG): cv.string,
@@ -138,6 +139,7 @@ SEND_ACTIONABLE_SCHEMA = vol.Schema(
         vol.Optional("button3_action"): cv.string,
         vol.Optional("button3_title"): cv.string,
         vol.Optional(ATTR_TARGET): vol.All(cv.ensure_list, [cv.string]),
+        vol.Optional("group_name"): cv.string,
         vol.Optional(ATTR_CATEGORY): cv.string,
         vol.Optional(ATTR_PRIORITY, default="high"): vol.In(["low", "normal", "high", "critical"]),
         vol.Optional(ATTR_TAG): cv.string,
@@ -159,6 +161,7 @@ SEND_WITH_IMAGE_SCHEMA = vol.Schema(
         vol.Exclusive(ATTR_CAMERA, "image_source"): cv.entity_id,
         vol.Optional(ATTR_ACTIONS): vol.All(cv.ensure_list, [ACTION_SCHEMA]),
         vol.Optional(ATTR_TARGET): vol.All(cv.ensure_list, [cv.string]),
+        vol.Optional("group_name"): cv.string,
         vol.Optional(ATTR_CATEGORY): cv.string,
         vol.Optional(ATTR_PRIORITY, default="normal"): vol.In(["low", "normal", "high", "critical"]),
         vol.Optional(ATTR_TAG): cv.string,
@@ -172,6 +175,7 @@ SEND_ALARM_CONFIRMATION_SCHEMA = vol.Schema(
         vol.Required(ATTR_TITLE): cv.string,
         vol.Required(ATTR_MESSAGE): cv.string,
         vol.Optional(ATTR_TARGET): vol.All(cv.ensure_list, [cv.string]),
+        vol.Optional("group_name"): cv.string,
         vol.Optional("alarm_entity"): cv.entity_id,
         vol.Optional("template"): vol.In(["alarm_response", "confirm_dismiss", "door_response", "yes_no"]),
         vol.Optional(ATTR_TAG, default="alarm_confirmation"): cv.string,
@@ -187,6 +191,7 @@ SEND_TEXT_INPUT_SCHEMA = vol.Schema(
         vol.Optional("input_title", default="Antworten"): cv.string,
         vol.Optional("placeholder", default="Nachricht eingeben..."): cv.string,
         vol.Optional(ATTR_TARGET): vol.All(cv.ensure_list, [cv.string]),
+        vol.Optional("group_name"): cv.string,
         vol.Optional(ATTR_TAG): cv.string,
         vol.Optional(ATTR_DATA): dict,
     }
@@ -358,7 +363,7 @@ async def _async_register_panel(hass: HomeAssistant, show_sidebar: bool = True) 
     await hass.http.async_register_static_paths(static_paths)
     
     # Version for cache busting
-    VERSION = "1.2.3.6"
+    VERSION = "1.2.5.0"
     
     frontend.async_register_built_in_panel(
         hass,
@@ -692,17 +697,45 @@ async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> N
         
         return data
     
+    def _resolve_group_to_devices(group_name: str) -> list[str]:
+        """Resolve a group name to list of device names."""
+        config_data = hass.data[DOMAIN].get(entry.entry_id, {})
+        user_groups = config_data.get("user_groups", [])
+
+        for group in user_groups:
+            if group.get("name") == group_name:
+                # Groups store device IDs or names
+                devices = group.get("devices", [])
+                resolved = []
+                for device in devices:
+                    if isinstance(device, str):
+                        # Remove domain prefix if present
+                        if "." in device:
+                            resolved.append(device.split(".")[-1])
+                        else:
+                            resolved.append(device)
+                return resolved
+
+        _LOGGER.warning("Group '%s' not found", group_name)
+        return []
+
     async def _send_to_devices(
         title: str,
         message: str,
         targets: list[str],
         data: dict,
         category: str | None = None,
+        group_name: str | None = None,
     ) -> None:
-        """Send notification to specified devices."""
+        """Send notification to specified devices or group."""
         config_data = hass.data[DOMAIN].get(entry.entry_id, {})
         categories = config_data.get("categories", DEFAULT_CATEGORIES)
-        
+
+        # Resolve group_name to devices if provided
+        if group_name and not targets:
+            targets = _resolve_group_to_devices(group_name)
+            _LOGGER.debug("Resolved group '%s' to devices: %s", group_name, targets)
+
         # Process targets - can be entity IDs or device names
         processed_targets = []
         if targets:
@@ -775,13 +808,14 @@ async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> N
             channel=call.data.get(ATTR_CHANNEL),
             clickaction=call.data.get(ATTR_CLICKACTION),
         )
-        
+
         await _send_to_devices(
             title=call.data[ATTR_TITLE],
             message=call.data[ATTR_MESSAGE],
             targets=call.data.get(ATTR_TARGET, []),
             data=data,
             category=call.data.get(ATTR_CATEGORY),
+            group_name=call.data.get("group_name"),
         )
     
     # ========== SERVICE: send_actionable ==========
@@ -839,8 +873,9 @@ async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> N
             targets=call.data.get(ATTR_TARGET, []),
             data=data,
             category=call.data.get(ATTR_CATEGORY),
+            group_name=call.data.get("group_name"),
         )
-    
+
     # ========== SERVICE: send_with_image ==========
     async def handle_send_with_image(call: ServiceCall) -> None:
         """Handle send_with_image service call - notification with image or camera snapshot."""
@@ -860,8 +895,9 @@ async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> N
             targets=call.data.get(ATTR_TARGET, []),
             data=data,
             category=call.data.get(ATTR_CATEGORY),
+            group_name=call.data.get("group_name"),
         )
-    
+
     # ========== SERVICE: send_alarm_confirmation ==========
     async def handle_send_alarm_confirmation(call: ServiceCall) -> None:
         """Handle send_alarm_confirmation - preconfigured alarm notification with buttons."""
@@ -915,8 +951,9 @@ async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> N
             targets=call.data.get(ATTR_TARGET, []),
             data=data,
             category="alarm",
+            group_name=call.data.get("group_name"),
         )
-    
+
     # ========== SERVICE: send_text_input ==========
     async def handle_send_text_input(call: ServiceCall) -> None:
         """Handle send_text_input - notification with text reply option."""
@@ -945,8 +982,9 @@ async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> N
             targets=call.data.get(ATTR_TARGET, []),
             data=data,
             category=call.data.get(ATTR_CATEGORY),
+            group_name=call.data.get("group_name"),
         )
-    
+
     # ========== SERVICE: clear_notifications ==========
     async def handle_clear_notifications(call: ServiceCall) -> None:
         """Handle clear_notifications service call."""

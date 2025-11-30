@@ -36,21 +36,6 @@ KNOWN_BUTTON_ACTIONS = [
 ]
 
 
-async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-) -> None:
-    """Set up Notify Manager sensors."""
-    sensors = [
-        NotifyManagerStatsSensor(hass, entry, "notifications_sent", "Gesendete Benachrichtigungen"),
-        NotifyManagerStatsSensor(hass, entry, "notifications_today", "Benachrichtigungen heute"),
-        NotifyManagerCategorySensor(hass, entry),
-        NotifyManagerLastActionSensor(hass, entry),
-    ]
-    async_add_entities(sensors)
-
-
 class NotifyManagerLastActionSensor(SensorEntity):
     """Sensor tracking the last clicked button action."""
 
@@ -75,7 +60,7 @@ class NotifyManagerLastActionSensor(SensorEntity):
             name="Notify Manager",
             manufacturer="Custom Integration",
             model="Notification Manager",
-            sw_version="1.2.3.6",
+            sw_version="1.2.5.0",
             configuration_url="/notify-manager",
         )
 
@@ -129,6 +114,7 @@ async def async_setup_entry(
         NotifyManagerStatsSensor(hass, entry, "notifications_sent", "Gesendete Benachrichtigungen"),
         NotifyManagerStatsSensor(hass, entry, "notifications_today", "Benachrichtigungen heute"),
         NotifyManagerCategorySensor(hass, entry),
+        NotifyManagerLastActionSensor(hass, entry),
     ]
     async_add_entities(sensors)
 
@@ -160,7 +146,7 @@ class NotifyManagerStatsSensor(SensorEntity):
             name="Notify Manager",
             manufacturer="Custom Integration",
             model="Notification Manager",
-            sw_version="1.2.3.6",
+            sw_version="1.2.5.0",
             configuration_url="/notify-manager",
         )
 
@@ -220,7 +206,7 @@ class NotifyManagerCategorySensor(SensorEntity):
             name="Notify Manager",
             manufacturer="Custom Integration",
             model="Notification Manager",
-            sw_version="1.2.3.6",
+            sw_version="1.2.5.0",
             configuration_url="/notify-manager",
         )
 
