@@ -19,27 +19,38 @@
 
 ## 📋 Changelog
 
+### v1.2.3.6
+- 🎯 **Vorlage-Zuordnung bei Button-Antworten** - Jetzt wird getrackt von welcher Vorlage die Antwort kam
+- 👥 **Neuer Service "An Gruppe senden"** - Sende an alle Geräte einer Gruppe
+- 📋 **Neue Select-Entity "Letzte Vorlage"** - Für Conditions: "Wenn Antwort von Vorlage X"
+- 💾 **Persistente Gruppen-Speicherung** - Gruppen werden im HA Storage gespeichert
+
 ### v1.2.3.4
-- ✨ **Neuer Sensor "Letzter Button"** - Trackt den zuletzt geklickten Button für einfache Automations-Conditions
-- 💾 **Persistente Vorlagen** - Vorlagen werden in HA Storage gespeichert (überleben Neustarts)
-- 🔌 **WebSocket API** - Automatische Synchronisation zwischen Frontend und Backend
-- 📝 **Verbessertes "Aus Vorlage senden"** - Dropdown mit Standard-Vorlagen + eigene Eingabe möglich
-- 🎯 **Button-Conditions** - Dropdown-Auswahl für alle bekannten Button-Actions
-- 🖼️ **Automatisches Icon-Setup** - Brand-Icons werden automatisch installiert
+- 🎯 Select "Button-Antwort" zeigt jetzt EINZELNE Buttons als Optionen
+- ✅❌👍👎🚨⏰🆘 Alle Button-Typen als separate Optionen
+
+### v1.2.3.3
+- ✨ Neuer Sensor "Letzter Button"
+- 💾 Persistente Vorlagen-Speicherung
+- 🔌 WebSocket API
 
 ### v1.2.3
-- Button-Editor mit einzelnen Feldern statt Tabelle
-- Button-Vorlagen-Auswahl im Service
+- Button-Editor mit einzelnen Feldern
 - `send_from_template` Service
 
 ### v1.2.0
 - Device Triggers, Conditions und Actions
-- Button-Entities, Select-Entities
-- Sidebar-Toggle
 
 ### v1.1.0
-- 18 Services für alle Companion App Features
-- Frontend-Panel mit 6 Tabs
+- 18 Services, Frontend-Panel
+
+---
+
+## 🖼️ Integration Icon
+
+Um das Icon anzuzeigen, erstelle einen PR an [home-assistant/brands](https://github.com/home-assistant/brands):
+1. Ordner: `custom_integrations/notify_manager/`
+2. Dateien: `icon.png` (256x256), `icon@2x.png` (512x512), `logo.png`
 
 ---
 

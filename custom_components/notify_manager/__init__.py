@@ -358,7 +358,7 @@ async def _async_register_panel(hass: HomeAssistant, show_sidebar: bool = True) 
     await hass.http.async_register_static_paths(static_paths)
     
     # Version for cache busting
-    VERSION = "1.2.3.4"
+    VERSION = "1.2.3.6"
     
     frontend.async_register_built_in_panel(
         hass,
@@ -993,6 +993,78 @@ async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> N
         
         _LOGGER.info("Saved %d user templates to storage", len(templates))
     
+    # ========== SERVICE: save_groups ==========
+    async def handle_save_groups(call: ServiceCall) -> None:
+        """Save groups from frontend to persistent storage."""
+        groups = call.data.get("groups", [])
+        config_data = hass.data[DOMAIN].get(entry.entry_id, {})
+        config_data["user_groups"] = groups
+        
+        # Persist to storage
+        store = hass.data[DOMAIN].get("_store")
+        if store:
+            await store.async_save({
+                "templates": config_data.get("user_templates", []),
+                "groups": groups,
+            })
+        
+        _LOGGER.info("Saved %d user groups to storage", len(groups))
+    
+    # ========== SERVICE: send_to_group ==========
+    async def handle_send_to_group(call: ServiceCall) -> None:
+        """Send notification to all devices in a group."""
+        group_name = call.data.get("group_name", "")
+        config_data = hass.data[DOMAIN].get(entry.entry_id, {})
+        user_groups = config_data.get("user_groups", [])
+        
+        # Find group by name
+        group = None
+        for g in user_groups:
+            if g.get("name") == group_name:
+                group = g
+                break
+        
+        if not group:
+            _LOGGER.error("Group not found: %s. Available: %s", 
+                         group_name, [g.get("name") for g in user_groups])
+            return
+        
+        # Get devices from group
+        devices = group.get("devices", [])
+        if not devices:
+            _LOGGER.warning("Group %s has no devices", group_name)
+            return
+        
+        # Build actions from button_template if specified
+        actions = []
+        button_template = call.data.get("button_template")
+        if button_template and button_template != "none":
+            actions = ACTION_TEMPLATES.get(button_template, [])
+        
+        # Build notification data
+        data = _build_notification_data(
+            priority=call.data.get("priority", "normal"),
+            tag=call.data.get("tag"),
+            actions=actions if actions else None,
+        )
+        
+        # Track for template association
+        tag = call.data.get("tag") or f"group_{group_name}_{datetime.now().timestamp()}"
+        config_data["last_sent_notification"] = {
+            "template_name": group_name,
+            "tag": tag,
+            "timestamp": datetime.now().isoformat(),
+        }
+        
+        await _send_to_devices(
+            title=call.data.get("title", ""),
+            message=call.data.get("message", ""),
+            targets=devices,
+            data=data,
+        )
+        
+        _LOGGER.info("Sent notification to group %s (%d devices)", group_name, len(devices))
+    
     # ========== SERVICE: get_templates ==========
     async def handle_get_templates(call: ServiceCall) -> dict:
         """Get all available templates (default + user)."""
@@ -1078,6 +1150,14 @@ async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> N
             data=data,
             category=call.data.get(ATTR_CATEGORY),
         )
+        
+        # Track template for button response association
+        tag = call.data.get(ATTR_TAG) or f"template_{template_name}_{datetime.now().timestamp()}"
+        config_data["last_sent_notification"] = {
+            "template_name": template_name,
+            "tag": tag,
+            "timestamp": datetime.now().isoformat(),
+        }
     
     # Register all services
     hass.services.async_register(
@@ -1102,10 +1182,16 @@ async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> N
         DOMAIN, "save_templates", handle_save_templates
     )
     hass.services.async_register(
+        DOMAIN, "save_groups", handle_save_groups
+    )
+    hass.services.async_register(
         DOMAIN, "get_templates", handle_get_templates
     )
     hass.services.async_register(
         DOMAIN, "send_from_template", handle_send_from_template
+    )
+    hass.services.async_register(
+        DOMAIN, "send_to_group", handle_send_to_group
     )
 
 

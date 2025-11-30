@@ -1,7 +1,7 @@
 """Select entities for Notify Manager integration.
 
 Bietet Select-Entities für:
-- Button-Antwort Auswahl (für Conditions)
+- Button-Antwort Auswahl (für Conditions) - mit Vorlagen-Zuordnung
 - Standard-Priorität
 - Standard-Kategorie
 """
@@ -50,6 +50,7 @@ async def async_setup_entry(
     """Set up Notify Manager select entities."""
     entities = [
         NotifyManagerButtonResponseSelect(hass, entry),
+        NotifyManagerLastTemplateSelect(hass, entry),
         NotifyManagerPrioritySelect(hass, entry),
         NotifyManagerCategorySelect(hass, entry),
     ]
@@ -64,6 +65,7 @@ class NotifyManagerButtonResponseSelect(SelectEntity):
     1. Automatically updates when a button is clicked on a notification
     2. Can be used in automation conditions to check which button was clicked
     3. Shows all possible button actions as options
+    4. Tracks which template/notification the response belongs to
     """
     
     _attr_has_entity_name = True
@@ -76,8 +78,215 @@ class NotifyManagerButtonResponseSelect(SelectEntity):
         self._attr_name = "Button-Antwort"
         self._last_action_time = None
         self._last_reply_text = None
+        self._last_template = None
+        self._last_tag = None
+        self._last_category = None
         
         self._attr_options = list(BUTTON_ACTIONS.values())
+        self._attr_current_option = BUTTON_ACTIONS["none"]
+    
+    async def async_added_to_hass(self) -> None:
+        """Register event listener when added to hass."""
+        await super().async_added_to_hass()
+        
+        @callback
+        def handle_action(event: Event) -> None:
+            """Handle notification action events - auto-update this select."""
+            action = event.data.get("action", "")
+            if action and action in BUTTON_ACTIONS:
+                self._attr_current_option = BUTTON_ACTIONS[action]
+                self._last_action_time = event.time_fired.isoformat()
+                self._last_reply_text = event.data.get("reply_text")
+                self._last_tag = event.data.get("tag")
+                self._last_category = event.data.get("category")
+                
+                # Try to get template from event data or hass.data
+                self._last_template = event.data.get("template_name")
+                if not self._last_template:
+                    # Check if we stored the template when sending
+                    data = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
+                    last_sent = data.get("last_sent_notification", {})
+                    if last_sent.get("tag") == self._last_tag:
+                        self._last_template = last_sent.get("template_name")
+                
+                # Store in hass.data for other components
+                data = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
+                data["last_button_action"] = action
+                data["last_button_time"] = self._last_action_time
+                data["last_button_template"] = self._last_template
+                data["last_button_tag"] = self._last_tag
+                
+                self.async_write_ha_state()
+                _LOGGER.debug("Button response updated: %s (template: %s)", action, self._last_template)
+        
+        self.hass.bus.async_listen("mobile_app_notification_action", handle_action)
+    
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._entry.entry_id)},
+            name="Notify Manager",
+            manufacturer="Custom Integration",
+            model="Notification Manager",
+            sw_version="1.2.3.6",
+        )
+    
+    @property
+    def icon(self) -> str:
+        """Return icon based on current selection."""
+        current = self._attr_current_option
+        if "Bestätigen" in current or "OK" in current:
+            return "mdi:check-circle"
+        elif "Ablehnen" in current or "Nein" in current:
+            return "mdi:close-circle"
+        elif "Notfall" in current:
+            return "mdi:alert"
+        elif "Tür" in current or "öffnen" in current:
+            return "mdi:door-open"
+        elif "Antwort" in current:
+            return "mdi:message-reply"
+        return "mdi:gesture-tap-button"
+    
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return extra state attributes including template info."""
+        action_key = self._get_action_key(self._attr_current_option)
+        return {
+            "action_id": action_key,
+            "last_action_time": self._last_action_time,
+            "reply_text": self._last_reply_text,
+            "template_name": self._last_template,
+            "tag": self._last_tag,
+            "category": self._last_category,
+            "available_actions": list(BUTTON_ACTIONS.keys()),
+        }
+    
+    def _get_action_key(self, label: str) -> str:
+        """Get action key from label."""
+        for key, value in BUTTON_ACTIONS.items():
+            if value == label:
+                return key
+        return "none"
+    
+    def _get_action_label(self, key: str) -> str:
+        """Get label from action key."""
+        return BUTTON_ACTIONS.get(key, BUTTON_ACTIONS["none"])
+    
+    async def async_select_option(self, option: str) -> None:
+        """Change the selected option (manual selection for testing/reset)."""
+        self._attr_current_option = option
+        action_key = self._get_action_key(option)
+        
+        # Update hass.data
+        data = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
+        data["last_button_action"] = action_key
+        
+        self.async_write_ha_state()
+
+
+class NotifyManagerLastTemplateSelect(SelectEntity):
+    """Select entity that tracks which template was last used.
+    
+    This allows conditions like:
+    - "If last button was from template X"
+    - Combined with button response for precise automation control
+    """
+    
+    _attr_has_entity_name = True
+    
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
+        """Initialize the select entity."""
+        self.hass = hass
+        self._entry = entry
+        self._attr_unique_id = f"{entry.entry_id}_last_template"
+        self._attr_name = "Letzte Vorlage"
+        self._last_action_time = None
+        
+        # Build options from default templates + placeholder for user templates
+        self._template_options = {
+            "none": "⏸️ Keine Vorlage",
+            "🚪 Türklingel": "🚪 Türklingel",
+            "🚨 Alarm": "🚨 Alarm",
+            "⏰ Erinnerung": "⏰ Erinnerung",
+            "📦 Paket": "📦 Paket",
+            "🔔 Standard": "🔔 Standard",
+            "confirm_dismiss": "✅❌ Bestätigen/Ablehnen",
+            "yes_no": "👍👎 Ja/Nein",
+            "alarm_response": "🚨 Alarm-Antwort",
+            "door_response": "🚪 Tür-Antwort",
+        }
+        
+        self._attr_options = list(self._template_options.values())
+        self._attr_current_option = self._template_options["none"]
+    
+    async def async_added_to_hass(self) -> None:
+        """Register event listener when added to hass."""
+        await super().async_added_to_hass()
+        
+        # Update options with user templates from storage
+        await self._update_template_options()
+        
+        @callback
+        def handle_action(event: Event) -> None:
+            """Handle notification action - track which template it came from."""
+            # Get template from event or hass.data
+            template_name = event.data.get("template_name")
+            tag = event.data.get("tag")
+            
+            if not template_name:
+                data = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
+                last_sent = data.get("last_sent_notification", {})
+                if last_sent.get("tag") == tag:
+                    template_name = last_sent.get("template_name")
+            
+            if template_name and template_name in self._template_options:
+                self._attr_current_option = self._template_options[template_name]
+                self._last_action_time = event.time_fired.isoformat()
+                self.async_write_ha_state()
+        
+        self.hass.bus.async_listen("mobile_app_notification_action", handle_action)
+    
+    async def _update_template_options(self) -> None:
+        """Update options with user-created templates."""
+        data = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
+        user_templates = data.get("user_templates", [])
+        
+        for template in user_templates:
+            name = template.get("name", "")
+            if name and name not in self._template_options:
+                self._template_options[name] = name
+        
+        self._attr_options = list(self._template_options.values())
+    
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._entry.entry_id)},
+            name="Notify Manager",
+            manufacturer="Custom Integration",
+            model="Notification Manager",
+            sw_version="1.2.3.6",
+        )
+    
+    @property
+    def icon(self) -> str:
+        """Return icon."""
+        return "mdi:file-document-outline"
+    
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return extra state attributes."""
+        return {
+            "last_action_time": self._last_action_time,
+            "available_templates": list(self._template_options.keys()),
+        }
+    
+    async def async_select_option(self, option: str) -> None:
+        """Change the selected option."""
+        self._attr_current_option = option
+        self.async_write_ha_state()
         self._attr_current_option = BUTTON_ACTIONS["none"]
     
     async def async_added_to_hass(self) -> None:
@@ -111,7 +320,7 @@ class NotifyManagerButtonResponseSelect(SelectEntity):
             name="Notify Manager",
             manufacturer="Custom Integration",
             model="Notification Manager",
-            sw_version="1.2.3.4",
+            sw_version="1.2.3.6",
         )
     
     @property
@@ -198,7 +407,7 @@ class NotifyManagerPrioritySelect(SelectEntity):
             name="Notify Manager",
             manufacturer="Custom Integration",
             model="Notification Manager",
-            sw_version="1.2.3.4",
+            sw_version="1.2.3.6",
         )
     
     @property
@@ -277,7 +486,7 @@ class NotifyManagerCategorySelect(SelectEntity):
             name="Notify Manager",
             manufacturer="Custom Integration",
             model="Notification Manager",
-            sw_version="1.2.3.4",
+            sw_version="1.2.3.6",
         )
     
     @property

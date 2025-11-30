@@ -78,6 +78,82 @@ save_templates:
       selector:
         object:
 
+save_groups:
+  name: 💾 Gruppen speichern (intern)
+  description: Speichert Gruppen vom Frontend (wird automatisch aufgerufen).
+  fields:
+    groups:
+      name: Gruppen
+      required: true
+      selector:
+        object:
+
+send_to_group:
+  name: 👥 An Gruppe senden
+  description: Sendet eine Benachrichtigung an alle Geräte in einer Gruppe.
+  fields:
+    group_name:
+      name: Gruppe
+      description: "Name der Gruppe (aus dem Notify Manager Panel)"
+      required: true
+      selector:
+        select:
+          custom_value: true
+          options:
+            - label: "👨‍👩‍👧‍👦 Familie"
+              value: "👨‍👩‍👧‍👦 Familie"
+            - label: "🏠 Alle Geräte"
+              value: "🏠 Alle Geräte"
+            - label: "👤 Admins"
+              value: "👤 Admins"
+    title:
+      name: Titel
+      required: true
+      selector:
+        text:
+    message:
+      name: Nachricht
+      required: true
+      selector:
+        text:
+          multiline: true
+    priority:
+      name: Priorität
+      required: false
+      default: "normal"
+      selector:
+        select:
+          options:
+            - label: "🔇 Leise"
+              value: "low"
+            - label: "📱 Normal"
+              value: "normal"
+            - label: "🔔 Wichtig"
+              value: "high"
+            - label: "🚨 Kritisch"
+              value: "critical"
+    button_template:
+      name: Button-Vorlage
+      required: false
+      selector:
+        select:
+          options:
+            - label: "Keine Buttons"
+              value: "none"
+            - label: "✅ Bestätigen / ❌ Ablehnen"
+              value: "confirm_dismiss"
+            - label: "👍 Ja / 👎 Nein"
+              value: "yes_no"
+            - label: "🚨 Alarm OK / ⏰ Später / 🆘 Notfall"
+              value: "alarm_response"
+            - label: "🔓 Öffnen / 🚪 Ignorieren / 🔊 Sprechen"
+              value: "door_response"
+    tag:
+      name: Tag
+      required: false
+      selector:
+        text:
+
 # =============================================================================
 # GRUNDLEGENDE BENACHRICHTIGUNGEN
 # =============================================================================
