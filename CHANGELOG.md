@@ -2,6 +2,42 @@
 
 All notable changes to Notify Manager will be documented in this file.
 
+## [1.2.7.3] - 2025-11-30
+
+### Changed
+- **NUR EINE Aktion in Automationen**: `notify_manager.send_from_template`
+  - ALLE anderen Services komplett entfernt (auch zusätzliche wie TTS, Map, etc.)
+  - Nur interne Services für Frontend (save_templates, save_groups) bleiben aktiv
+  - Alle Features sind über Vorlagen im Panel verfügbar
+
+- **EINE Select-Entity statt zwei**: `select.notify_manager_active_notification`
+  - Kombiniert Templates UND Action IDs in einer Entity
+  - Optionen mit Sektionen: "── Vorlagen ──" und "── Action IDs ──"
+  - Aktualisiert automatisch bei Button-Klick oder Template-Versand
+  - Für `condition: device` → `domain: select` → `type: selected_option`
+
+- **Vereinfachte services.yaml**:
+  - Nur noch `send_from_template` mit verbesserter Beschreibung
+  - Hinweis auf Panel für Vorlagen-Erstellung
+  - Template-Selector mit custom_value für freie Eingabe
+
+### Removed
+- **Alle zusätzlichen Services entfernt**:
+  - send_tts, send_map, send_media, send_progress, send_chronometer
+  - device_command, request_location_update, update_widgets
+  - update_complications, clear_badge, set_badge, send_advanced
+  - send_notification, send_actionable, send_with_image
+  - send_alarm_confirmation, send_text_input, clear_notifications
+  - send_to_group, get_templates
+- **Second Select Entity**: `select.notify_manager_last_button_action` (nun integriert)
+
+### Technical
+- additional_services.py wird nicht mehr geladen
+- select.py komplett überarbeitet mit kombinierter Entity
+- Separator-Optionen ("──") werden bei manueller Auswahl ignoriert
+
+---
+
 ## [1.2.7.2] - 2025-11-30
 
 ### Added

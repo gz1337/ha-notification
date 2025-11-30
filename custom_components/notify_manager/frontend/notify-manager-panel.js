@@ -1,6 +1,6 @@
 /**
  * Notify Manager Panel - Complete Notification Management
- * Version 1.2.7.2
+ * Version 1.2.7.3
  *
  * Features:
  * - ALL Home Assistant Companion App notification features

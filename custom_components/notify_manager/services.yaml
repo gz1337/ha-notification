@@ -1,45 +1,36 @@
 # =============================================================================
-# Notify Manager - Vereinfachte Services
+# Notify Manager - Nur EIN Service für Automationen
 # Alle Einstellungen werden im Frontend (Notify Manager Panel) vorgenommen
 # =============================================================================
 
 send_from_template:
-  name: 📋 Benachrichtigung aus Vorlage senden
+  name: "📋 Benachrichtigung aus Vorlage senden"
   description: >
     Sendet eine Benachrichtigung basierend auf einer im Notify Manager Panel erstellten Vorlage.
 
-    👉 Vorlagen erstellen: Einstellungen → Geräte → Notify Manager → Panel öffnen → Tab "Vorlagen"
+    📱 ALLE Optionen werden in der Vorlage konfiguriert:
+    • Empfänger (Geräte oder Gruppen)
+    • Titel und Nachricht
+    • Buttons mit Action IDs
+    • Bilder und Kamera-Snapshots
+    • Android: Kanal, LED, Vibration, etc.
+    • iOS: Sound, Badge, Critical Alerts, etc.
 
-    Alle Optionen (Empfänger, Titel, Nachricht, Buttons, Bild, etc.) werden in der Vorlage definiert.
+    👉 Vorlagen erstellen:
+    Einstellungen → Geräte & Dienste → Notify Manager → Panel öffnen → Tab "Vorlagen"
+
+    💡 Verfügbare Vorlagen anzeigen:
+    Entität "select.notify_manager_active_notification" zeigt alle Vorlagennamen
   fields:
     template_name:
-      name: Vorlage auswählen
-      description: "Name der Vorlage aus dem Notify Manager Panel. Erstelle Vorlagen unter: Panel → Vorlagen"
+      name: "Vorlage"
+      description: >
+        Name der Vorlage aus dem Notify Manager Panel.
+        Öffne das Panel um verfügbare Vorlagen zu sehen.
       required: true
       example: "🚪 Türklingel"
       selector:
-        text:
-
-# =============================================================================
-# INTERNE SERVICES (werden automatisch vom Frontend aufgerufen)
-# =============================================================================
-
-save_templates:
-  name: "[Intern] Vorlagen speichern"
-  description: "Wird automatisch vom Frontend aufgerufen. Nicht manuell verwenden."
-  fields:
-    templates:
-      name: Vorlagen-Daten
-      required: true
-      selector:
-        object:
-
-save_groups:
-  name: "[Intern] Gruppen speichern"
-  description: "Wird automatisch vom Frontend aufgerufen. Nicht manuell verwenden."
-  fields:
-    groups:
-      name: Gruppen-Daten
-      required: true
-      selector:
-        object:
+        select:
+          custom_value: true
+          options:
+            - "Vorlage im Panel erstellen..."

@@ -1,6 +1,10 @@
-"""Select entities for Notify Manager integration.
+"""Select entity for Notify Manager integration.
 
-Provides select entity for notification template selection in automation conditions.
+Provides ONE select entity showing:
+1. Template names (for send_from_template service)
+2. Action IDs (for automation conditions)
+
+When a button is pressed, the entity updates to show which action was triggered.
 """
 from __future__ import annotations
 
@@ -23,23 +27,24 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Notify Manager select entities."""
-    entities = [
-        NotifyManagerActiveTemplateSelect(hass, entry),
-        NotifyManagerLastButtonActionSelect(hass, entry),
-    ]
-
-    async_add_entities(entities)
+    """Set up Notify Manager select entity."""
+    async_add_entities([NotifyManagerSelect(hass, entry)])
 
 
-class NotifyManagerActiveTemplateSelect(SelectEntity):
-    """Select entity showing the last active notification template.
+class NotifyManagerSelect(SelectEntity):
+    """Combined select entity for templates and button actions.
 
-    This entity:
-    1. Automatically updates when a notification is sent from a template
-    2. Can be used in automation conditions to check which template was last used
-    3. Shows all user-created templates from the frontend as options
-    4. Tracks button responses from notifications
+    Options are organized as:
+    1. "Keine Auswahl" (default)
+    2. "── Vorlagen ──" (separator)
+    3. Template names...
+    4. "── Action IDs ──" (separator)
+    5. Action IDs from buttons...
+
+    The entity automatically updates when:
+    - A notification button is pressed → shows the Action ID
+    - A notification is sent from template → shows the template name
+    - Templates are saved → refreshes options
     """
 
     _attr_has_entity_name = True
@@ -48,220 +53,125 @@ class NotifyManagerActiveTemplateSelect(SelectEntity):
         """Initialize the select entity."""
         self.hass = hass
         self._entry = entry
-        self._attr_unique_id = f"{entry.entry_id}_active_template"
+        self._attr_unique_id = f"{entry.entry_id}_active_notification"
         self._attr_name = "Active Notification"
         self._attr_icon = "mdi:bell-check"
+
+        # Track last action details
         self._last_action = None
         self._last_action_time = None
+        self._last_template = None
         self._last_reply_text = None
 
-        # Will be populated from HA storage
-        self._template_options = {"none": "No active notification"}
-        self._attr_options = list(self._template_options.values())
-        self._attr_current_option = self._template_options["none"]
+        # Option mappings
+        self._templates = {}  # id -> name
+        self._actions = {}    # action_id -> template_name
+
+        # Initial options
+        self._attr_options = ["Keine Auswahl"]
+        self._attr_current_option = "Keine Auswahl"
 
     async def async_added_to_hass(self) -> None:
-        """Register event listener when added to hass."""
+        """Register event listeners when added to hass."""
         await super().async_added_to_hass()
 
-        # Load templates from storage
-        await self._update_template_options()
+        # Load initial options
+        await self._update_options()
 
         @callback
         def handle_templates_updated(event: Event) -> None:
-            """Handle when templates are saved - refresh options."""
+            """Refresh options when templates are saved."""
             _LOGGER.debug("Templates updated, refreshing options")
-            self.hass.async_create_task(self._update_template_options())
+            self.hass.async_create_task(self._update_options())
             self.async_write_ha_state()
 
         self.hass.bus.async_listen(f"{DOMAIN}_templates_saved", handle_templates_updated)
 
         @callback
         def handle_notification_sent(event: Event) -> None:
-            """Handle when a notification is sent - track the template."""
+            """Update when notification is sent from template."""
             template_name = event.data.get("template_name")
-            if template_name and template_name in self._template_options:
-                self._attr_current_option = self._template_options.get(template_name, template_name)
-                self.async_write_ha_state()
-
-        @callback
-        def handle_action(event: Event) -> None:
-            """Handle notification action events."""
-            action = event.data.get("action", "")
-            self._last_action = action
-            self._last_action_time = event.time_fired.isoformat()
-            self._last_reply_text = event.data.get("reply_text")
-
-            # Try to get template from event data or hass.data
-            template_name = event.data.get("template_name")
-            if not template_name:
-                data = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
-                last_sent = data.get("last_sent_notification", {})
-                tag = event.data.get("tag")
-                if last_sent.get("tag") == tag:
-                    template_name = last_sent.get("template_name")
-
             if template_name:
-                option = self._template_options.get(template_name, template_name)
-                if option in self._attr_options:
-                    self._attr_current_option = option
+                # Find display name
+                display = template_name
+                for tid, tname in self._templates.items():
+                    if tid == template_name or tname == template_name:
+                        display = tname
+                        break
+
+                if display in self._attr_options:
+                    self._attr_current_option = display
+                    self._last_template = template_name
                     self.async_write_ha_state()
 
-            _LOGGER.debug("Button action received: %s (template: %s)", action, template_name)
-
-        self.hass.bus.async_listen("mobile_app_notification_action", handle_action)
         self.hass.bus.async_listen(f"{DOMAIN}_notification_sent", handle_notification_sent)
-
-    async def _update_template_options(self) -> None:
-        """Update options with user-created templates from storage."""
-        self._template_options = {"none": "No active notification"}
-
-        # Get templates from hass.data (loaded from persistent storage)
-        data = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
-        user_templates = data.get("user_templates", [])
-
-        for template in user_templates:
-            name = template.get("name", "")
-            template_id = template.get("id", name)
-            if name:
-                self._template_options[template_id] = name
-
-        self._attr_options = list(self._template_options.values())
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return device info."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._entry.entry_id)},
-            name="Notify Manager",
-            manufacturer="Custom Integration",
-            model="Notification Manager",
-            sw_version="1.2.7.2",
-        )
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return extra state attributes."""
-        # Collect all action IDs from templates
-        data = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
-        user_templates = data.get("user_templates", [])
-        all_actions = []
-        for template in user_templates:
-            for btn in template.get("buttons", []):
-                action_id = btn.get("action", "")
-                if action_id:
-                    all_actions.append(f"{action_id} ({template.get('name', 'Unknown')})")
-
-        return {
-            "last_action": self._last_action,
-            "last_action_time": self._last_action_time,
-            "reply_text": self._last_reply_text,
-            "available_templates": [k for k in self._template_options.keys() if k != "none"],
-            "available_action_ids": all_actions,
-        }
-
-    async def async_select_option(self, option: str) -> None:
-        """Change the selected option (for manual reset)."""
-        self._attr_current_option = option
-        self.async_write_ha_state()
-
-
-class NotifyManagerLastButtonActionSelect(SelectEntity):
-    """Select entity showing the last button action pressed.
-
-    This entity:
-    1. Shows all action IDs from user-created templates as options
-    2. Automatically updates when a notification button is pressed
-    3. Can be used in automation conditions: condition: device → domain: select → type: selected_option
-    4. Options are the actual Action IDs (Test, Test2, CONFIRM, etc.)
-    """
-
-    _attr_has_entity_name = True
-
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        """Initialize the select entity."""
-        self.hass = hass
-        self._entry = entry
-        self._attr_unique_id = f"{entry.entry_id}_last_button_action"
-        self._attr_name = "Last Button Action"
-        self._attr_icon = "mdi:gesture-tap-button"
-        self._last_action_time = None
-        self._last_template = None
-
-        # Will be populated from user templates
-        self._action_options = ["none"]
-        self._attr_options = ["No action yet"]
-        self._attr_current_option = "No action yet"
-
-    async def async_added_to_hass(self) -> None:
-        """Register event listener when added to hass."""
-        await super().async_added_to_hass()
-
-        # Load action IDs from templates
-        await self._update_action_options()
-
-        @callback
-        def handle_templates_updated(event: Event) -> None:
-            """Handle when templates are saved - refresh action options."""
-            _LOGGER.debug("Templates updated, refreshing action options")
-            self.hass.async_create_task(self._update_action_options())
-            self.async_write_ha_state()
-
-        self.hass.bus.async_listen(f"{DOMAIN}_templates_saved", handle_templates_updated)
 
         @callback
         def handle_action(event: Event) -> None:
-            """Handle notification action events - update to pressed action."""
+            """Update when a notification button is pressed."""
             action = event.data.get("action", "")
             if not action:
                 return
 
+            self._last_action = action
             self._last_action_time = event.time_fired.isoformat()
+            self._last_reply_text = event.data.get("reply_text")
 
-            # Find template name for this action
-            data = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
-            user_templates = data.get("user_templates", [])
-            for template in user_templates:
-                for btn in template.get("buttons", []):
-                    if btn.get("action") == action:
-                        self._last_template = template.get("name", "")
-                        break
+            # Find template for this action
+            self._last_template = self._actions.get(action, "")
 
-            # Update current option if action is in our list
-            if action in self._action_options:
+            # Update current option to the action ID
+            if action in self._attr_options:
                 self._attr_current_option = action
                 self.async_write_ha_state()
-                _LOGGER.info("Button action '%s' selected (template: %s)", action, self._last_template)
+                _LOGGER.info("Button '%s' pressed (template: %s)", action, self._last_template)
             else:
-                _LOGGER.debug("Action '%s' not in options, adding dynamically", action)
-                # Add unknown action dynamically
-                self._action_options.append(action)
+                # Action not in list - add it dynamically
+                _LOGGER.debug("Action '%s' not in options, adding", action)
                 self._attr_options.append(action)
                 self._attr_current_option = action
                 self.async_write_ha_state()
 
         self.hass.bus.async_listen("mobile_app_notification_action", handle_action)
 
-    async def _update_action_options(self) -> None:
-        """Update options with action IDs from user templates."""
-        self._action_options = ["none"]
-        options_display = ["No action yet"]
+    async def _update_options(self) -> None:
+        """Build options list from templates and their action IDs."""
+        options = ["Keine Auswahl"]
+        self._templates = {}
+        self._actions = {}
 
-        # Get templates from hass.data
+        # Get templates from storage
         data = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})
         user_templates = data.get("user_templates", [])
 
+        # Collect templates
+        template_names = []
         for template in user_templates:
-            template_name = template.get("name", "")
-            for btn in template.get("buttons", []):
-                action_id = btn.get("action", "")
-                if action_id and action_id not in self._action_options:
-                    self._action_options.append(action_id)
-                    # Show action ID directly (user can see template in attributes)
-                    options_display.append(action_id)
+            name = template.get("name", "")
+            template_id = template.get("id", name)
+            if name:
+                self._templates[template_id] = name
+                template_names.append(name)
 
-        self._attr_options = options_display
-        _LOGGER.debug("Updated action options: %s", self._action_options)
+                # Collect action IDs from buttons
+                for btn in template.get("buttons", []):
+                    action_id = btn.get("action", "")
+                    if action_id:
+                        self._actions[action_id] = name
+
+        # Build options list with sections
+        if template_names:
+            options.append("── Vorlagen ──")
+            options.extend(sorted(template_names))
+
+        action_ids = list(self._actions.keys())
+        if action_ids:
+            options.append("── Action IDs ──")
+            options.extend(sorted(action_ids))
+
+        self._attr_options = options
+        _LOGGER.debug("Updated options: %d templates, %d actions",
+                      len(template_names), len(action_ids))
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -271,19 +181,25 @@ class NotifyManagerLastButtonActionSelect(SelectEntity):
             name="Notify Manager",
             manufacturer="Custom Integration",
             model="Notification Manager",
-            sw_version="1.2.7.2",
+            sw_version="1.2.7.3",
         )
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return extra state attributes."""
         return {
+            "last_action": self._last_action,
             "last_action_time": self._last_action_time,
             "last_template": self._last_template,
-            "all_action_ids": [a for a in self._action_options if a != "none"],
+            "reply_text": self._last_reply_text,
+            "available_templates": list(self._templates.values()),
+            "available_action_ids": list(self._actions.keys()),
         }
 
     async def async_select_option(self, option: str) -> None:
-        """Change the selected option (for manual reset)."""
+        """Handle manual option selection (for reset)."""
+        # Don't allow selecting separator lines
+        if option.startswith("──"):
+            return
         self._attr_current_option = option
         self.async_write_ha_state()

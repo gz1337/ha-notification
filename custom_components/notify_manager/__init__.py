@@ -72,10 +72,7 @@ from .const import (
     PRIORITY_LEVELS,
     ACTION_TEMPLATES,
 )
-from .additional_services import (
-    async_register_additional_services,
-    async_unregister_additional_services,
-)
+# Additional services are no longer registered - all features available through templates
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -270,11 +267,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     show_sidebar = entry.data.get(CONF_SHOW_SIDEBAR, True)
     await _async_register_panel(hass, show_sidebar)
     
-    # Register services
+    # Register services (only send_from_template + internal services)
     await _async_register_services(hass, entry)
-    
-    # Register additional services (TTS, Maps, Commands)
-    await async_register_additional_services(hass, entry)
     
     # Register event listener for notification actions
     await _async_register_action_listener(hass, entry)
@@ -378,7 +372,7 @@ async def _async_register_panel(hass: HomeAssistant, show_sidebar: bool = True) 
     await hass.http.async_register_static_paths(static_paths)
     
     # Version for cache busting
-    VERSION = "1.2.7.2"
+    VERSION = "1.2.7.3"
     
     frontend.async_register_built_in_panel(
         hass,
@@ -1318,39 +1312,18 @@ async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> N
             "tag": tag,
         })
     
-    # Register all services
+    # Register ONLY essential services
+    # Public service - shown in automations
     hass.services.async_register(
-        DOMAIN, SERVICE_SEND_NOTIFICATION, handle_send_notification, schema=SEND_NOTIFICATION_SCHEMA
+        DOMAIN, "send_from_template", handle_send_from_template
     )
-    hass.services.async_register(
-        DOMAIN, SERVICE_SEND_ACTIONABLE, handle_send_actionable, schema=SEND_ACTIONABLE_SCHEMA
-    )
-    hass.services.async_register(
-        DOMAIN, SERVICE_SEND_WITH_IMAGE, handle_send_with_image, schema=SEND_WITH_IMAGE_SCHEMA
-    )
-    hass.services.async_register(
-        DOMAIN, SERVICE_SEND_ALARM_CONFIRMATION, handle_send_alarm_confirmation, schema=SEND_ALARM_CONFIRMATION_SCHEMA
-    )
-    hass.services.async_register(
-        DOMAIN, SERVICE_SEND_TEXT_INPUT, handle_send_text_input, schema=SEND_TEXT_INPUT_SCHEMA
-    )
-    hass.services.async_register(
-        DOMAIN, SERVICE_CLEAR_NOTIFICATIONS, handle_clear_notifications, schema=CLEAR_NOTIFICATIONS_SCHEMA
-    )
+
+    # Internal services - called by frontend only (not in services.yaml = hidden in UI)
     hass.services.async_register(
         DOMAIN, "save_templates", handle_save_templates
     )
     hass.services.async_register(
         DOMAIN, "save_groups", handle_save_groups
-    )
-    hass.services.async_register(
-        DOMAIN, "get_templates", handle_get_templates
-    )
-    hass.services.async_register(
-        DOMAIN, "send_from_template", handle_send_from_template
-    )
-    hass.services.async_register(
-        DOMAIN, "send_to_group", handle_send_to_group
     )
 
 
@@ -1361,21 +1334,16 @@ async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> N
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    
+
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
-        
+
         if not hass.data[DOMAIN]:
-            hass.services.async_remove(DOMAIN, SERVICE_SEND_NOTIFICATION)
-            hass.services.async_remove(DOMAIN, SERVICE_SEND_ACTIONABLE)
-            hass.services.async_remove(DOMAIN, SERVICE_SEND_WITH_IMAGE)
-            hass.services.async_remove(DOMAIN, SERVICE_SEND_ALARM_CONFIRMATION)
-            hass.services.async_remove(DOMAIN, SERVICE_SEND_TEXT_INPUT)
-            hass.services.async_remove(DOMAIN, SERVICE_CLEAR_NOTIFICATIONS)
-            hass.services.async_remove(DOMAIN, "save_templates")
+            # Remove only the services we registered
             hass.services.async_remove(DOMAIN, "send_from_template")
-            await async_unregister_additional_services(hass)
-    
+            hass.services.async_remove(DOMAIN, "save_templates")
+            hass.services.async_remove(DOMAIN, "save_groups")
+
     return unload_ok
 
 
