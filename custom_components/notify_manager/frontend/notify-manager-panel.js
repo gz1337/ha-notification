@@ -1,6 +1,6 @@
 /**
  * Notify Manager Panel - Complete Notification Management
- * Version 1.2.7.1
+ * Version 1.2.7.2
  *
  * Features:
  * - ALL Home Assistant Companion App notification features
@@ -552,14 +552,19 @@ class NotifyManagerPanel extends LitElement {
       }
     }
 
-    // Load groups from localStorage
+    // Load groups from HA
     try {
+      const groupsResponse = await this.hass.callWS({ type: "notify_manager/get_groups" });
+      if (groupsResponse?.groups?.length) {
+        this._groups = groupsResponse.groups;
+      }
+    } catch (e) {
+      // Fallback to localStorage
       const storedGroups = localStorage.getItem("notify_manager_groups");
       if (storedGroups) {
-        this._groups = JSON.parse(storedGroups);
-        await this._syncGroupsToHA();
+        try { this._groups = JSON.parse(storedGroups); } catch {}
       }
-    } catch {}
+    }
 
     // Load device types from localStorage
     try {
@@ -1543,16 +1548,61 @@ action:
   }
 
   _applyTemplate(t) {
+    // Basic fields
     this._title = t.title || '';
+    this._subtitle = t.subtitle || '';
     this._message = t.message || '';
     this._type = t.type || 'simple';
     this._priority = t.priority || 'normal';
     this._buttons = [...(t.buttons || [])];
-    // Load additional template settings if available
-    if (t.channel) this._channel = t.channel;
-    if (t.color) this._color = t.color;
-    if (t.sound) this._sound = t.sound;
-    if (t.clickAction) this._clickAction = t.clickAction;
+
+    // Recipients
+    this._selectedDevices = [...(t.devices || [])];
+    this._selectedGroup = t.group || '';
+
+    // Image/Camera
+    this._camera = t.camera || '';
+    this._imageUrl = t.image || '';
+
+    // Android options
+    this._channel = t.channel || '';
+    this._color = t.color || '';
+    this._ledColor = t.ledColor || '';
+    this._vibrationPattern = t.vibrationPattern || '';
+    this._notificationIcon = t.notificationIcon || '';
+    this._iconUrl = t.iconUrl || '';
+    this._sticky = t.sticky || false;
+    this._persistent = t.persistent || false;
+    this._alertOnce = t.alertOnce || false;
+    this._timeout = t.timeout || 0;
+    this._visibility = t.visibility || 'public';
+    this._carUi = t.carUi || false;
+    this._importance = t.importance || 'default';
+
+    // iOS options
+    this._sound = t.sound || '';
+    this._badge = t.badge || 0;
+    this._interruptionLevel = t.interruptionLevel || 'active';
+    this._critical = t.critical || false;
+    this._criticalVolume = t.criticalVolume || 1.0;
+
+    // Common
+    this._clickAction = t.clickAction || '';
+    this._tag = t.tag || '';
+    this._group = t.notificationGroup || '';
+
+    // TTS
+    this._ttsText = t.ttsText || '';
+    this._mediaStream = t.mediaStream || 'music_stream';
+
+    // Map
+    this._latitude = t.latitude || '';
+    this._longitude = t.longitude || '';
+
+    // Progress
+    this._progress = t.progress || 0;
+    this._progressMax = t.progressMax || 100;
+    this._progressIndeterminate = t.progressIndeterminate || false;
   }
 
   _loadTemplateForEdit(t) {
@@ -1617,21 +1667,51 @@ action:
       id: existingId || 'tpl_' + Date.now(),
       name,
       title: this._title,
+      subtitle: this._subtitle,
       message: this._message,
       type: this._type,
       priority: this._priority,
       buttons: [...this._buttons],
-      // Save additional settings
+      // Recipients - IMPORTANT for send_from_template
+      devices: [...this._selectedDevices],  // Selected devices
+      group: this._selectedGroup,            // Selected group (name/id)
+      // Image/Camera
+      camera: this._camera,
+      image: this._imageUrl,
+      // Android options
       channel: this._channel,
       color: this._color,
-      sound: this._sound,
-      clickAction: this._clickAction,
+      ledColor: this._ledColor,
+      vibrationPattern: this._vibrationPattern,
+      notificationIcon: this._notificationIcon,
+      iconUrl: this._iconUrl,
       sticky: this._sticky,
       persistent: this._persistent,
+      alertOnce: this._alertOnce,
+      timeout: this._timeout,
+      visibility: this._visibility,
+      carUi: this._carUi,
       importance: this._importance,
+      // iOS options
+      sound: this._sound,
+      badge: this._badge,
       interruptionLevel: this._interruptionLevel,
       critical: this._critical,
       criticalVolume: this._criticalVolume,
+      // Common
+      clickAction: this._clickAction,
+      tag: this._tag,
+      notificationGroup: this._group,
+      // TTS (Android)
+      ttsText: this._ttsText,
+      mediaStream: this._mediaStream,
+      // Map (iOS)
+      latitude: this._latitude,
+      longitude: this._longitude,
+      // Progress (Android)
+      progress: this._progress,
+      progressMax: this._progressMax,
+      progressIndeterminate: this._progressIndeterminate,
     };
   }
 

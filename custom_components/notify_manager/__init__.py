@@ -336,9 +336,24 @@ async def _async_register_websocket_commands(hass: HomeAssistant, entry: ConfigE
         
         connection.send_result(msg["id"], {"names": names})
     
+    @websocket_api.websocket_command({
+        "type": "notify_manager/get_groups"
+    })
+    @websocket_api.async_response
+    async def websocket_get_groups(
+        hass: HomeAssistant,
+        connection: websocket_api.ActiveConnection,
+        msg: dict,
+    ) -> None:
+        """Return all user groups."""
+        config_data = hass.data[DOMAIN].get(entry.entry_id, {})
+        user_groups = config_data.get("user_groups", [])
+        connection.send_result(msg["id"], {"groups": user_groups})
+
     # Register WebSocket commands
     websocket_api.async_register_command(hass, websocket_get_templates)
     websocket_api.async_register_command(hass, websocket_get_template_names)
+    websocket_api.async_register_command(hass, websocket_get_groups)
 
 
 async def _async_register_panel(hass: HomeAssistant, show_sidebar: bool = True) -> None:
@@ -363,7 +378,7 @@ async def _async_register_panel(hass: HomeAssistant, show_sidebar: bool = True) 
     await hass.http.async_register_static_paths(static_paths)
     
     # Version for cache busting
-    VERSION = "1.2.7.1"
+    VERSION = "1.2.7.2"
     
     frontend.async_register_built_in_panel(
         hass,
@@ -1125,47 +1140,73 @@ async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> N
     
     # ========== SERVICE: send_from_template ==========
     async def handle_send_from_template(call: ServiceCall) -> None:
-        """Send notification using a saved template."""
+        """Send notification using a saved template - ALL settings from template."""
         from .const import DEFAULT_NOTIFICATION_TEMPLATES
-        
+
         template_name = call.data.get("template_name", "")
         config_data = hass.data[DOMAIN].get(entry.entry_id, {})
         user_templates = config_data.get("user_templates", [])
-        
+        user_groups = config_data.get("user_groups", [])
+
         # Find template by name or id - first in user templates
         template = None
         for t in user_templates:
             if t.get("name") == template_name or t.get("id") == template_name:
                 template = t
                 break
-        
+
         # If not found, check default templates
         if not template and template_name in DEFAULT_NOTIFICATION_TEMPLATES:
             template = DEFAULT_NOTIFICATION_TEMPLATES[template_name]
-        
+
         # Also check by ID in defaults
         if not template:
             for default_template in DEFAULT_NOTIFICATION_TEMPLATES.values():
                 if default_template.get("id") == template_name:
                     template = default_template
                     break
-        
+
         if not template:
-            _LOGGER.error("Template not found: %s. Available: %s", 
-                         template_name, 
-                         list(DEFAULT_NOTIFICATION_TEMPLATES.keys()) + [t.get("name") for t in user_templates])
+            _LOGGER.error("Template not found: %s. Available user templates: %s",
+                         template_name,
+                         [t.get("name") for t in user_templates])
             return
-        
-        # Override with call data if provided
-        title = call.data.get("title") or template.get("title", "")
-        message = call.data.get("message") or template.get("message", "")
-        priority = call.data.get("priority") or template.get("priority", "normal")
+
+        # Get ALL settings from template
+        title = template.get("title", "")
+        message = template.get("message", "")
+        priority = template.get("priority", "normal")
+        notification_type = template.get("type", "simple")
         buttons = template.get("buttons", [])
-        
+
+        # Get recipients from template
+        template_devices = template.get("devices", [])  # List of device names
+        template_group = template.get("group", "")  # Group name
+
+        # Resolve group to devices if specified
+        targets = []
+        if template_group:
+            for g in user_groups:
+                if g.get("name") == template_group or g.get("id") == template_group:
+                    targets = g.get("devices", [])
+                    _LOGGER.debug("Resolved group '%s' to devices: %s", template_group, targets)
+                    break
+        elif template_devices:
+            targets = template_devices
+        # If no targets in template, send to all devices
+        if not targets:
+            targets = []  # Empty = all devices in _send_to_devices
+
         # Convert buttons to actions format
         actions = []
         for btn in buttons:
             action = {"action": btn.get("action", ""), "title": btn.get("title", "")}
+            if btn.get("uri"):
+                action["uri"] = btn["uri"]
+            if btn.get("destructive"):
+                action["destructive"] = btn["destructive"]
+            if btn.get("authenticationRequired"):
+                action["authenticationRequired"] = btn["authenticationRequired"]
             if btn.get("behavior"):
                 action["behavior"] = btn["behavior"]
             if btn.get("textInputButtonTitle"):
@@ -1173,32 +1214,109 @@ async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> N
             if btn.get("textInputPlaceholder"):
                 action["textInputPlaceholder"] = btn["textInputPlaceholder"]
             actions.append(action)
-        
-        notification_type = template.get("type", "simple")
-        
-        data = _build_notification_data(
-            priority=priority,
-            category=call.data.get(ATTR_CATEGORY),
-            tag=call.data.get(ATTR_TAG),
-            actions=actions if notification_type == "buttons" else None,
-            camera_entity=template.get("camera") if notification_type == "image" else None,
-        )
-        
+
+        # Build notification data from ALL template settings
+        data = {}
+
+        # Priority/Importance
+        if priority:
+            from .const import PRIORITY_LEVELS
+            priority_config = PRIORITY_LEVELS.get(priority, {})
+            data.update(priority_config)
+
+        # Tag
+        tag = template.get("tag") or f"template_{template_name}_{datetime.now().timestamp()}"
+        data["tag"] = tag
+
+        # Actions/Buttons
+        if actions and notification_type == "buttons":
+            data["actions"] = actions
+
+        # Click Action
+        if template.get("clickAction"):
+            data["clickAction"] = template["clickAction"]
+            data["url"] = template["clickAction"]
+
+        # Image/Camera
+        if notification_type == "image":
+            if template.get("camera"):
+                data["entity_id"] = template["camera"]
+            elif template.get("image"):
+                data["image"] = template["image"]
+
+        # Android specific
+        if template.get("channel"):
+            data["channel"] = template["channel"]
+        if template.get("color"):
+            data["color"] = template["color"]
+        if template.get("ledColor"):
+            data["ledColor"] = template["ledColor"]
+        if template.get("vibrationPattern"):
+            data["vibrationPattern"] = template["vibrationPattern"]
+        if template.get("notificationIcon"):
+            data["notification_icon"] = template["notificationIcon"]
+        if template.get("iconUrl"):
+            data["icon_url"] = template["iconUrl"]
+        if template.get("sticky"):
+            data["sticky"] = "true"
+        if template.get("persistent"):
+            data["persistent"] = "true"
+        if template.get("alertOnce"):
+            data["alert_once"] = "true"
+        if template.get("timeout"):
+            data["timeout"] = template["timeout"]
+        if template.get("visibility"):
+            data["visibility"] = template["visibility"]
+        if template.get("carUi"):
+            data["car_ui"] = "true"
+        if template.get("importance"):
+            data["importance"] = template["importance"]
+
+        # iOS specific
+        if template.get("sound"):
+            data["push"] = data.get("push", {})
+            data["push"]["sound"] = template["sound"]
+        if template.get("badge") is not None:
+            data["push"] = data.get("push", {})
+            data["push"]["badge"] = template["badge"]
+        if template.get("interruptionLevel"):
+            data["push"] = data.get("push", {})
+            data["push"]["interruption-level"] = template["interruptionLevel"]
+        if template.get("critical"):
+            data["push"] = data.get("push", {})
+            data["push"]["sound"] = {"name": "default", "critical": 1, "volume": template.get("criticalVolume", 1.0)}
+
+        # Subtitle
+        if template.get("subtitle"):
+            data["subtitle"] = template["subtitle"]
+
+        # Group
+        if template.get("notificationGroup"):
+            data["group"] = template["notificationGroup"]
+
+        _LOGGER.info("Sending from template '%s' to targets: %s", template_name, targets or "all devices")
+
         await _send_to_devices(
             title=title,
             message=message,
-            targets=call.data.get(ATTR_TARGET, []),
+            targets=targets,
             data=data,
-            category=call.data.get(ATTR_CATEGORY),
+            category=None,
         )
-        
+
         # Track template for button response association
-        tag = call.data.get(ATTR_TAG) or f"template_{template_name}_{datetime.now().timestamp()}"
         config_data["last_sent_notification"] = {
             "template_name": template_name,
             "tag": tag,
             "timestamp": datetime.now().isoformat(),
         }
+
+        # Fire event for tracking
+        hass.bus.async_fire(f"{DOMAIN}_notification_sent", {
+            "template_name": template_name,
+            "targets": targets,
+            "tag": tag,
+        })
     
     # Register all services
     hass.services.async_register(

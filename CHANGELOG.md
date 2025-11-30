@@ -2,6 +2,47 @@
 
 All notable changes to Notify Manager will be documented in this file.
 
+## [1.2.7.2] - 2025-11-30
+
+### Added
+- **NEW: Last Button Action Select Entity** (`select.notify_manager_last_button_action`)
+  - Shows all Action IDs from user templates as options (Test, Test2, CONFIRM, etc.)
+  - Automatically updates when a notification button is pressed
+  - Use in automations: `condition: device` → `domain: select` → `type: selected_option` → `option: Test`
+  - Attributes: `last_action_time`, `last_template`, `all_action_ids`
+
+- **WebSocket für Groups**: Neuer `notify_manager/get_groups` Command
+  - Groups werden jetzt aus HA geladen, nicht nur localStorage
+
+### Changed
+- **Nur noch EINE Aktion**: `send_from_template` in Automationen
+  - Alle anderen Services entfernt (nur interne save_templates/save_groups bleiben)
+  - Alles wird im Frontend-Panel konfiguriert
+
+- **Komplette Vorlage-Speicherung**:
+  - Empfänger (Geräte ODER Gruppe) werden in Vorlage gespeichert
+  - Alle Optionen (Android/iOS) werden gespeichert
+  - Beim Senden werden ALLE Einstellungen aus Vorlage verwendet
+
+- **Alles in Home Assistant gespeichert**:
+  - Templates → HA Storage
+  - Groups → HA Storage
+  - Kein Datenverlust bei Browser-Cache-Löschung
+
+### Fixed
+- **Device Automation Dependency**: `device_automation` zu manifest dependencies hinzugefügt
+- **send_from_template**: Verwendet jetzt ALLE Einstellungen aus der Vorlage (inkl. Empfänger)
+- **_applyTemplate**: Lädt alle Vorlage-Einstellungen korrekt beim Bearbeiten
+- **_buildTemplateFromForm**: Speichert alle Einstellungen inkl. Empfänger
+
+### Technical
+- services.yaml drastisch vereinfacht (nur send_from_template + interne Services)
+- handle_send_from_template komplett überarbeitet mit allen Template-Optionen
+- Zwei Select-Entities: `active_notification` (Templates) + `last_button_action` (Action IDs)
+- HACS auto-update Kompatibilität geprüft
+
+---
+
 ## [1.2.7.1] - 2025-11-30
 
 ### Changed
