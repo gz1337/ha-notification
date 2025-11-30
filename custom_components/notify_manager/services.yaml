@@ -908,216 +908,40 @@ clear_badge:
             - integration: mobile_app
 
 send_advanced:
-  name: ⚙️ Erweitert (alle Optionen)
-  description: Volle Kontrolle über alle Benachrichtigungs-Optionen.
+  name: ⚙️ Aus Vorlage senden (vereinfacht)
+  description: Sendet eine Benachrichtigung basierend auf einer Vorlage. Alle Optionen werden aus der Vorlage übernommen.
   fields:
-    title:
-      name: Titel
-      required: true
+    template_name:
+      name: Vorlage
+      description: "Name der erstellten Vorlage aus dem Frontend"
+      required: false
       selector:
         text:
-    message:
-      name: Nachricht
-      required: true
-      selector:
-        text:
-          multiline: true
     target:
-      name: Empfänger
+      name: Empfänger (Geräte)
+      description: "Einzelne Geräte auswählen"
       required: false
       selector:
         entity:
           multiple: true
           filter:
             - integration: mobile_app
-    # iOS Options
-    subtitle:
-      name: "iOS: Untertitel"
-      required: false
-      advanced: true
-      selector:
-        text:
-    sound:
-      name: "iOS: Sound"
-      required: false
-      advanced: true
-      selector:
-        text:
-    critical:
-      name: "iOS: Kritisch"
-      description: "Durchbricht Nicht-Stören"
-      required: false
-      advanced: true
-      selector:
-        boolean:
-    volume:
-      name: "iOS: Kritisch-Lautstärke"
-      required: false
-      advanced: true
-      selector:
-        number:
-          min: 0
-          max: 1
-          step: 0.1
-    badge:
-      name: "iOS: Badge"
-      required: false
-      advanced: true
-      selector:
-        number:
-          min: 0
-          max: 99
-    interruption_level:
-      name: "iOS: Interruption Level"
-      required: false
-      advanced: true
-      selector:
-        select:
-          options:
-            - "passive"
-            - "active"
-            - "time-sensitive"
-            - "critical"
-    # Android Options
-    channel:
-      name: "Android: Kanal"
-      required: false
-      advanced: true
-      selector:
-        text:
-    importance:
-      name: "Android: Wichtigkeit"
-      required: false
-      advanced: true
-      selector:
-        select:
-          options:
-            - "min"
-            - "low"
-            - "default"
-            - "high"
-            - "max"
-    color:
-      name: "Android: Farbe"
-      description: "#RRGGBB Format"
-      required: false
-      advanced: true
-      selector:
-        text:
-    vibration_pattern:
-      name: "Android: Vibration"
-      description: "z.B. 100, 1000, 100"
-      required: false
-      advanced: true
-      selector:
-        text:
-    led_color:
-      name: "Android: LED-Farbe"
-      required: false
-      advanced: true
-      selector:
-        text:
-    notification_icon:
-      name: "Android: Status-Icon"
-      description: "MDI Icon, z.B. mdi:bell"
-      required: false
-      advanced: true
-      selector:
-        icon:
-    visibility:
-      name: "Android: Sichtbarkeit"
-      required: false
-      advanced: true
-      selector:
-        select:
-          options:
-            - label: "Öffentlich"
-              value: "public"
-            - label: "Privat"
-              value: "private"
-            - label: "Geheim"
-              value: "secret"
-    car_ui:
-      name: "Android: Auto UI"
-      required: false
-      advanced: true
-      selector:
-        boolean:
-    # Common Options
-    tag:
-      name: Tag
+    group_name:
+      name: Oder an Gruppe senden
+      description: "Gruppenname aus dem Notify Manager Panel"
       required: false
       selector:
         text:
-    group:
-      name: Gruppe
+    title:
+      name: Titel
+      description: "Überschreibt den Titel der Vorlage"
       required: false
-      advanced: true
       selector:
         text:
-    sticky:
-      name: Sticky
+    message:
+      name: Nachricht
+      description: "Überschreibt die Nachricht der Vorlage"
       required: false
-      advanced: true
-      selector:
-        boolean:
-    persistent:
-      name: Dauerhaft
-      required: false
-      advanced: true
-      selector:
-        boolean:
-    alert_once:
-      name: Nur einmal alarmieren
-      required: false
-      advanced: true
-      selector:
-        boolean:
-    timeout:
-      name: Auto-Dismiss (Sekunden)
-      required: false
-      advanced: true
-      selector:
-        number:
-          min: 1
-          max: 86400
-    click_action:
-      name: Bei Klick öffnen
-      required: false
-      advanced: true
       selector:
         text:
-    # Attachments
-    image:
-      name: Bild-URL
-      required: false
-      advanced: true
-      selector:
-        text:
-    video:
-      name: Video-URL
-      required: false
-      advanced: true
-      selector:
-        text:
-    audio:
-      name: Audio-URL
-      required: false
-      advanced: true
-      selector:
-        text:
-    camera_entity:
-      name: Kamera
-      required: false
-      advanced: true
-      selector:
-        entity:
-          filter:
-            - domain: camera
-    # Actions
-    actions:
-      name: Buttons
-      required: false
-      advanced: true
-      selector:
-        object:
+          multiline: true

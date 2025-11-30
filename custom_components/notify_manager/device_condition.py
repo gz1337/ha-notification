@@ -1,6 +1,6 @@
 """Device conditions for Notify Manager integration.
 
-Ermöglicht die Verwendung von Notify Manager Bedingungen in der Automations-UI.
+Provides dynamic conditions based on user-created templates and their actions.
 """
 from __future__ import annotations
 
@@ -20,52 +20,64 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import condition, config_validation as cv, device_registry as dr
 from homeassistant.helpers.typing import ConfigType, TemplateVarsType
 
-from .const import DOMAIN, DEFAULT_CATEGORIES
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-# All possible actions from templates and common use
-KNOWN_ACTIONS = {
-    "CONFIRM": "✅ Bestätigen",
-    "DISMISS": "❌ Ablehnen",
-    "YES": "👍 Ja",
-    "NO": "👎 Nein",
-    "ALARM_CONFIRM": "🚨 Alarm OK",
-    "ALARM_SNOOZE": "⏰ Alarm Später",
-    "ALARM_EMERGENCY": "🆘 Notfall",
-    "DOOR_UNLOCK": "🔓 Tür öffnen",
-    "DOOR_IGNORE": "🚪 Tür ignorieren",
-    "DOOR_SPEAK": "🔊 Sprechen",
-    "REPLY": "💬 Antwort",
-}
 
-# Known templates for condition filtering
-KNOWN_TEMPLATES = {
-    "any": "Alle Vorlagen",
-    "🚪 Türklingel": "🚪 Türklingel",
-    "🚨 Alarm": "🚨 Alarm",
-    "⏰ Erinnerung": "⏰ Erinnerung",
-    "📦 Paket": "📦 Paket",
-    "🔔 Standard": "🔔 Standard",
-    "confirm_dismiss": "✅❌ Bestätigen/Ablehnen",
-    "yes_no": "👍👎 Ja/Nein",
-    "alarm_response": "🚨 Alarm-Antwort",
-    "door_response": "🚪 Tür-Antwort",
-}
+def _get_user_templates(hass: HomeAssistant) -> list[dict]:
+    """Get user templates from HA storage."""
+    domain_data = hass.data.get(DOMAIN, {})
+    for entry_data in domain_data.values():
+        if isinstance(entry_data, dict) and "user_templates" in entry_data:
+            return entry_data.get("user_templates", [])
+    return []
 
-# Condition types
+
+def _get_all_action_ids(hass: HomeAssistant) -> dict[str, str]:
+    """Extract all action IDs from user templates."""
+    templates = _get_user_templates(hass)
+    actions = {}
+
+    for template in templates:
+        template_name = template.get("name", "")
+        for btn in template.get("buttons", []):
+            action_id = btn.get("action", "")
+            action_title = btn.get("title", action_id)
+            if action_id:
+                # Format: "ACTION_ID (from Template Name)"
+                actions[action_id] = f"{action_title} ({template_name})"
+
+    # If no actions found, return a placeholder
+    if not actions:
+        actions["NO_ACTIONS"] = "No templates with buttons created yet"
+
+    return actions
+
+
+def _get_all_template_names(hass: HomeAssistant) -> dict[str, str]:
+    """Get all template names for filtering."""
+    templates = _get_user_templates(hass)
+    names = {"any": "Any Template"}
+
+    for template in templates:
+        template_id = template.get("id", template.get("name", ""))
+        template_name = template.get("name", "")
+        if template_id and template_name:
+            names[template_id] = template_name
+
+    return names
+
+
+# Condition types - simplified to only template-related conditions
 CONDITION_TYPES = {
-    "last_action_was": "Letzte Button-Aktion war",
-    "category_enabled": "Kategorie ist aktiviert",
-    "category_disabled": "Kategorie ist deaktiviert",
-    "device_available": "Gerät ist verfügbar",
-    "has_pending_action": "Hat ausstehende Aktion",
+    "last_action_was": "Last Button Action Was",
+    "device_available": "Device Available",
 }
 
 CONDITION_SCHEMA = DEVICE_CONDITION_BASE_SCHEMA.extend(
     {
         vol.Required(CONF_TYPE): vol.In(CONDITION_TYPES.keys()),
-        vol.Optional("category"): vol.In(list(DEFAULT_CATEGORIES.keys())),
         vol.Optional("action"): cv.string,
         vol.Optional("device"): cv.string,
         vol.Optional("template_name"): cv.string,
@@ -80,16 +92,16 @@ async def async_get_conditions(
     """Return a list of conditions for a device."""
     device_registry = dr.async_get(hass)
     device = device_registry.async_get(device_id)
-    
+
     if not device:
         return []
-    
+
     # Check if this is a Notify Manager device
     if not any(identifier[0] == DOMAIN for identifier in device.identifiers):
         return []
-    
+
     conditions = []
-    
+
     for condition_type in CONDITION_TYPES:
         conditions.append(
             {
@@ -99,7 +111,7 @@ async def async_get_conditions(
                 CONF_TYPE: condition_type,
             }
         )
-    
+
     return conditions
 
 
@@ -116,47 +128,23 @@ def async_condition_from_config(
 ) -> condition.ConditionCheckerType:
     """Create a condition from config."""
     condition_type = config[CONF_TYPE]
-    
+
     @callback
     def test_condition(
         hass: HomeAssistant, variables: TemplateVarsType = None
     ) -> bool:
         """Test the condition."""
         domain_data = hass.data.get(DOMAIN, {})
-        
-        if condition_type == "category_enabled":
-            category = config.get("category")
-            if not category:
-                return True
-            
-            for entry_data in domain_data.values():
-                if isinstance(entry_data, dict) and "categories" in entry_data:
-                    categories = entry_data.get("categories", {})
-                    cat_config = categories.get(category, {})
-                    return cat_config.get("enabled", True)
-            return True
-        
-        elif condition_type == "category_disabled":
-            category = config.get("category")
-            if not category:
-                return False
-            
-            for entry_data in domain_data.values():
-                if isinstance(entry_data, dict) and "categories" in entry_data:
-                    categories = entry_data.get("categories", {})
-                    cat_config = categories.get(category, {})
-                    return not cat_config.get("enabled", True)
-            return False
-        
-        elif condition_type == "device_available":
+
+        if condition_type == "device_available":
             device = config.get("device")
             if not device:
                 return False
-            
+
             notify_services = hass.services.async_services().get("notify", {})
             service_name = f"mobile_app_{device}"
             return service_name in notify_services
-        
+
         elif condition_type == "last_action_was":
             action = config.get("action")
             template_name = config.get("template_name")
@@ -211,42 +199,25 @@ def async_condition_from_config(
                             except (ValueError, TypeError):
                                 pass
             return False
-        
-        elif condition_type == "has_pending_action":
-            for entry_data in domain_data.values():
-                if isinstance(entry_data, dict) and "pending_actions" in entry_data:
-                    pending = entry_data.get("pending_actions", {})
-                    if pending:
-                        return True
-            return False
-        
+
         return False
-    
+
     return test_condition
 
 
 async def async_get_condition_capabilities(
     hass: HomeAssistant, config: ConfigType
 ) -> dict[str, vol.Schema]:
-    """Return condition capabilities."""
+    """Return condition capabilities with dynamic options from user templates."""
     condition_type = config.get(CONF_TYPE)
-    
-    if condition_type in ["category_enabled", "category_disabled"]:
-        return {
-            "extra_fields": vol.Schema(
-                {
-                    vol.Required("category"): vol.In(list(DEFAULT_CATEGORIES.keys())),
-                }
-            )
-        }
-    
-    elif condition_type == "device_available":
-        # Get available devices
+
+    if condition_type == "device_available":
+        # Get available devices dynamically
         devices = []
         for service in hass.services.async_services().get("notify", {}):
             if service.startswith("mobile_app_"):
                 devices.append(service.replace("mobile_app_", ""))
-        
+
         if devices:
             return {
                 "extra_fields": vol.Schema(
@@ -256,17 +227,20 @@ async def async_get_condition_capabilities(
                 )
             }
         return {}
-    
+
     elif condition_type == "last_action_was":
-        # Provide dropdown with known actions and templates
+        # Get actions dynamically from user templates
+        action_options = _get_all_action_ids(hass)
+        template_options = _get_all_template_names(hass)
+
         return {
             "extra_fields": vol.Schema(
                 {
-                    vol.Required("action"): vol.In(list(KNOWN_ACTIONS.keys())),
-                    vol.Optional("template_name", default="any"): vol.In(list(KNOWN_TEMPLATES.keys())),
+                    vol.Required("action"): vol.In(list(action_options.keys())),
+                    vol.Optional("template_name", default="any"): vol.In(list(template_options.keys())),
                     vol.Optional("within_seconds", default=300): cv.positive_int,
                 }
             )
         }
-    
+
     return {}

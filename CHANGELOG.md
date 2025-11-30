@@ -2,6 +2,36 @@
 
 All notable changes to Notify Manager will be documented in this file.
 
+## [1.2.7.0] - 2025-11-30
+
+### Added
+- **Device Type Management**: Set iOS or Android per device in frontend
+  - Platform-specific notification options shown based on target devices
+  - Stored in localStorage for persistence
+
+- **ALL Companion App Notification Features** in Frontend:
+  - Android: channel, color, ledColor, vibrationPattern, notificationIcon, iconUrl, sticky, persistent, alertOnce, timeout, visibility, carUi, chronometer, importance
+  - iOS: sound, badge, interruptionLevel, critical, criticalVolume
+  - Notification types: simple, buttons, image, media, tts (Android), map (iOS), progress (Android)
+  - Dashboard dropdown for click actions (shows all Lovelace dashboards/views)
+
+- **Dynamic Device Condition Actions**: Condition options now load from user-created templates
+  - `async_get_condition_capabilities()` dynamically fetches action IDs from user templates
+  - Shows action ID with template name label (e.g., "Test (Template Name)")
+  - No more hardcoded options
+
+### Changed
+- **Simplified send_advanced Service**: Now only has Template, Device/Group, Title, Message
+  - No more mock data or excessive options
+  - Use templates for all advanced settings
+
+### Technical
+- Updated `device_condition.py` with `_get_user_templates()`, `_get_all_action_ids()`, `_get_all_template_names()`
+- Complete frontend rewrite with platform detection via `_getTargetPlatforms()`
+- Version 1.2.7.0 across all files
+
+---
+
 ## [1.2.6.0] - 2025-11-30
 
 ### Changed
