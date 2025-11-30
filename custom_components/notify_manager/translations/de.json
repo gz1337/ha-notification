@@ -179,15 +179,21 @@
       }
     },
     "select": {
-      "action_template": {
-        "name": "Aktions-Vorlage",
+      "button_response": {
+        "name": "Button-Antwort",
         "state": {
-          "none": "Keine Vorlage",
-          "confirm_dismiss": "Bestätigen / Ablehnen",
-          "alarm_response": "Alarm-Antwort",
-          "door_response": "Tür-Antwort",
-          "yes_no": "Ja / Nein",
-          "reply": "Antworten"
+          "none": "⏸️ Keine Auswahl",
+          "CONFIRM": "✅ Bestätigen",
+          "DISMISS": "❌ Ablehnen",
+          "YES": "👍 Ja",
+          "NO": "👎 Nein",
+          "ALARM_CONFIRM": "🚨 Alarm OK",
+          "ALARM_SNOOZE": "⏰ Später erinnern",
+          "ALARM_EMERGENCY": "🆘 Notfall",
+          "DOOR_UNLOCK": "🔓 Tür öffnen",
+          "DOOR_IGNORE": "🚪 Ignorieren",
+          "DOOR_SPEAK": "🔊 Sprechen",
+          "REPLY": "💬 Antwort gesendet"
         }
       },
       "default_priority": {

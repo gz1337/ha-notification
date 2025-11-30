@@ -19,7 +19,7 @@
 
 ## 📋 Changelog
 
-### v1.2.3.3
+### v1.2.3.4
 - ✨ **Neuer Sensor "Letzter Button"** - Trackt den zuletzt geklickten Button für einfache Automations-Conditions
 - 💾 **Persistente Vorlagen** - Vorlagen werden in HA Storage gespeichert (überleben Neustarts)
 - 🔌 **WebSocket API** - Automatische Synchronisation zwischen Frontend und Backend
