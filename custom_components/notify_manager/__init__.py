@@ -372,7 +372,7 @@ async def _async_register_panel(hass: HomeAssistant, show_sidebar: bool = True) 
     await hass.http.async_register_static_paths(static_paths)
     
     # Version for cache busting
-    VERSION = "1.2.7.3"
+    VERSION = "1.2.7.5"
     
     frontend.async_register_built_in_panel(
         hass,
@@ -1137,7 +1137,32 @@ async def _async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> N
         """Send notification using a saved template - ALL settings from template."""
         from .const import DEFAULT_NOTIFICATION_TEMPLATES
 
-        template_name = call.data.get("template_name", "")
+        template_name = ""
+
+        # Get template from entity_id (new method - dropdown!)
+        entity_id = call.data.get("entity_id", "")
+        if entity_id:
+            select_entity = hass.states.get(entity_id)
+            if select_entity and select_entity.state not in ["Keine Auswahl", "unknown", "unavailable"]:
+                if not select_entity.state.startswith("──"):
+                    template_name = select_entity.state
+                    _LOGGER.info("Using template from entity %s: %s", entity_id, template_name)
+
+        # Fallback: direct template_name parameter
+        if not template_name:
+            template_name = call.data.get("template_name", "")
+
+        # Last fallback: default select entity
+        if not template_name:
+            select_entity = hass.states.get("select.notify_manager_active_notification")
+            if select_entity and select_entity.state not in ["Keine Auswahl", "unknown", "unavailable"]:
+                if not select_entity.state.startswith("──"):
+                    template_name = select_entity.state
+
+        if not template_name:
+            _LOGGER.error("No template specified! Set the entity to a template first.")
+            return
+
         config_data = hass.data[DOMAIN].get(entry.entry_id, {})
         user_templates = config_data.get("user_templates", [])
         user_groups = config_data.get("user_groups", [])

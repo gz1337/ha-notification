@@ -181,7 +181,7 @@ class NotifyManagerSelect(SelectEntity):
             name="Notify Manager",
             manufacturer="Custom Integration",
             model="Notification Manager",
-            sw_version="1.2.7.3",
+            sw_version="1.2.7.5",
         )
 
     @property

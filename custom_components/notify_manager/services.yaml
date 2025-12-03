@@ -1,36 +1,19 @@
 # =============================================================================
-# Notify Manager - Nur EIN Service für Automationen
-# Alle Einstellungen werden im Frontend (Notify Manager Panel) vorgenommen
+# Notify Manager - Benachrichtigung aus Vorlage senden
 # =============================================================================
 
 send_from_template:
   name: "📋 Benachrichtigung aus Vorlage senden"
   description: >
-    Sendet eine Benachrichtigung basierend auf einer im Notify Manager Panel erstellten Vorlage.
+    Wähle die Notify Manager Entity - ihre aktuelle Option wird als Vorlage verwendet.
 
-    📱 ALLE Optionen werden in der Vorlage konfiguriert:
-    • Empfänger (Geräte oder Gruppen)
-    • Titel und Nachricht
-    • Buttons mit Action IDs
-    • Bilder und Kamera-Snapshots
-    • Android: Kanal, LED, Vibration, etc.
-    • iOS: Sound, Badge, Critical Alerts, etc.
-
-    👉 Vorlagen erstellen:
-    Einstellungen → Geräte & Dienste → Notify Manager → Panel öffnen → Tab "Vorlagen"
-
-    💡 Verfügbare Vorlagen anzeigen:
-    Entität "select.notify_manager_active_notification" zeigt alle Vorlagennamen
+    Die Entity zeigt alle deine Vorlagen (123Tester, etc.) als Optionen!
   fields:
-    template_name:
-      name: "Vorlage"
-      description: >
-        Name der Vorlage aus dem Notify Manager Panel.
-        Öffne das Panel um verfügbare Vorlagen zu sehen.
+    entity_id:
+      name: "Vorlage wählen"
+      description: "Klicke auf die Entity → wähle deine Vorlage aus dem Dropdown"
       required: true
-      example: "🚪 Türklingel"
       selector:
-        select:
-          custom_value: true
-          options:
-            - "Vorlage im Panel erstellen..."
+        entity:
+          integration: notify_manager
+          domain: select

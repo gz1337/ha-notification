@@ -2,6 +2,31 @@
 
 All notable changes to Notify Manager will be documented in this file.
 
+## [1.2.7.5] - 2025-12-03
+
+### Changed
+- **Entity-Dropdown für Vorlagen**: Service verwendet jetzt Entity-Selector
+  - Wähle `select.notify_manager_active_notification` in Automationen
+  - Alle Vorlagen erscheinen als Dropdown-Optionen (123Tester, etc.)
+  - Keine manuelle Texteingabe mehr nötig!
+
+- **Dynamische Vorlagen-Aktualisierung**:
+  - Neue Vorlagen erscheinen SOFORT im Dropdown
+  - Event-basierte Aktualisierung bei `notify_manager_templates_saved`
+  - Kein HA-Neustart nötig nach Vorlagen-Erstellung
+
+- **Service-Parameter**:
+  - `entity_id`: Entity-Selector für Notify Manager Select (primär)
+  - `template_name`: Fallback für direkte Texteingabe (optional)
+  - Automatische Erkennung der aktuellen Entity-Option
+
+### Technical
+- services.yaml: Entity-Selector statt Text-Input
+- handle_send_from_template: Liest Template-Name aus Entity-State
+- Dreifacher Fallback: entity_id → template_name → default entity
+
+---
+
 ## [1.2.7.3] - 2025-11-30
 
 ### Changed
